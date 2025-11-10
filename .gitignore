@@ -1,0 +1,6 @@
+/target
+result
+.cargo/.global-cache
+.cargo/.package-cache
+.direnv
+.pre-commit-config.yaml
