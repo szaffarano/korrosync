@@ -59,7 +59,11 @@
           };
 
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-            extensions = ["rust-src" "rust-analyzer"];
+            extensions = [
+              "rust-src"
+              "rust-analyzer"
+              "llvm-tools-preview"
+            ];
             inherit targets;
           };
 
@@ -79,19 +83,17 @@
               rustToolchain
               bacon
               cargo-edit
+              cargo-machete
               cargo-zigbuild
               cargo-tarpaulin
               cargo-audit
               cargo-deny
+              cargo-llvm-cov
+              just
 
               zig
-
-              clang
-              lld
+              grcov
             ];
-
-            # CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C linker=clang -C link-arg=-fuse-ld=lld";
-            CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "zig-cc";
 
             shellHook = ''
               ${config.pre-commit.installationScript}

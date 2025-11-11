@@ -4,3 +4,6 @@ result
 .cargo/.package-cache
 .direnv
 .pre-commit-config.yaml
+coverage
+tarpaulin-report.html
+data
