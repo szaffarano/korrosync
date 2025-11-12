@@ -1,5 +1,6 @@
 use axum::{Router, http::StatusCode, middleware};
-use tokio::{net::TcpListener, signal};
+use tokio::{net::TcpListener, signal, task::JoinHandle};
+use tokio_util::sync::CancellationToken;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -13,7 +14,7 @@ use crate::{
     error::Result,
 };
 
-pub fn app(state: AppState) -> Router {
+pub fn app(state: AppState, shutdown_token: CancellationToken) -> (Router, JoinHandle<()>) {
     let public_routes = Router::new()
         .merge(routes::robots::create_route())
         .merge(routes::register::create_route())
@@ -36,23 +37,36 @@ pub fn app(state: AppState) -> Router {
                 )),
         );
 
-    Router::new()
+    let (rate_limiter, cleanup_task) = rate_limiter_layer(shutdown_token);
+
+    let router = Router::new()
         .merge(public_routes)
         .merge(auth_routes)
         .fallback(|| async { StatusCode::NOT_FOUND })
-        .layer(rate_limiter_layer())
-        .with_state(state)
+        .layer(rate_limiter)
+        .with_state(state);
+
+    (router, cleanup_task)
 }
 
 pub async fn serve(listener: TcpListener, state: AppState) -> Result<()> {
     info!("Server listening on {}", &listener.local_addr()?);
 
+    let shutdown_token = CancellationToken::new();
+    let (router, cleanup_task) = app(state, shutdown_token.clone());
+
     axum::serve(
         listener,
-        app(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await?;
+
+    // Cancel the rate limiter cleanup task and wait for it to finish
+    shutdown_token.cancel();
+    cleanup_task.await.ok();
+
+    info!("Server shutdown complete");
 
     Ok(())
 }
