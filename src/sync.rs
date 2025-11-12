@@ -98,13 +98,13 @@ pub struct User {
     password_hash: String,
 }
 
-#[derive(Debug, Decode, Encode, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Decode, Encode, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct ProgressKey {
     pub document: String,
     pub user: String,
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Default)]
 pub struct ProgressValue {
     pub device_id: String,
     pub device: String,
@@ -148,7 +148,7 @@ pub struct Bincode<T>(pub T);
 
 impl<T> Value for Bincode<T>
 where
-    T: std::fmt::Debug + Encode + Decode<()>,
+    T: std::fmt::Debug + Default + Encode + Decode<()>,
 {
     type SelfType<'a>
         = T
@@ -169,8 +169,8 @@ where
         Self: 'a,
     {
         decode_from_slice(data, bincode::config::standard())
-            .expect("Failed to decode bincode value")
-            .0
+            .map(|v| v.0)
+            .unwrap_or_default()
     }
 
     fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
@@ -178,7 +178,7 @@ where
         Self: 'a,
         Self: 'b,
     {
-        encode_to_vec(value, bincode::config::standard()).expect("Failed to encode bincode value")
+        encode_to_vec(value, bincode::config::standard()).unwrap_or_default()
     }
 
     fn type_name() -> TypeName {
@@ -188,7 +188,7 @@ where
 
 impl<T> Key for Bincode<T>
 where
-    T: std::fmt::Debug + Decode<()> + Encode + Ord,
+    T: std::fmt::Debug + Decode<()> + Default + Encode + Ord,
 {
     fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
         Self::from_bytes(data1).cmp(&Self::from_bytes(data2))
