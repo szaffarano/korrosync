@@ -7,3 +7,4 @@ result
 coverage
 tarpaulin-report.html
 data
+lcov.info
