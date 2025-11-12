@@ -30,7 +30,7 @@ jobs:
         run: cargo test
 
   fmt:
-    name: Rustfmt
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,8 @@ jobs:
       - name: Linting
         run: cargo clippy -- -D warnings
 
-  detect-unused-dependencies:
+  machete:
+    name: Detect unused dependencies
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
