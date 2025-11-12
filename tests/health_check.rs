@@ -55,16 +55,18 @@ async fn health_check_fails_with_invalid_verb() {
     for method in methods {
         let response = client
             .request(method.clone(), &url)
+            .header("x-auth-user", "test")
+            .header("x-auth-key", "test")
             .send()
             .await
             .expect("Failed to send request");
 
         assert_eq!(
-            StatusCode::UNAUTHORIZED,
+            StatusCode::METHOD_NOT_ALLOWED,
             response.status(),
             "Method {method:?} should return 405",
         );
-        assert_eq!(Some(31), response.content_length());
+        assert_eq!(Some(0), response.content_length());
     }
 }
 
