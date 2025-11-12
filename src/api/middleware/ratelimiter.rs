@@ -31,7 +31,7 @@ pub fn rate_limiter_layer<RespBody>(
                     break;
                 }
                 _ = tokio::time::sleep(interval) => {
-                    tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+                    tracing::debug!("rate limiting storage size: {}", governor_limiter.len());
                     governor_limiter.retain_recent();
                 }
             }
