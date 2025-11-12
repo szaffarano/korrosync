@@ -144,7 +144,7 @@ For production deployments, use a reverse proxy with TLS:
 ```nginx
 server {
     listen 443 ssl;
-    httpd on;
+    http2 on;
     server_name sync.example.com;
 
     ssl_certificate /path/to/cert.pem;
