@@ -12,8 +12,10 @@ platforms=(
   "linux/arm/v7"
 )
 
+DOCKER_USERNAME="${DOCKER_USERNAME:-szaffarano}"
+
 docker buildx build \
   --platform "$(echo "${platforms[*]}" | tr ' ' ',')" \
-  -t szaffarano/korrosync:latest \
-  -t szaffarano/korrosync:v"$version" \
+  -t "${DOCKER_USERNAME}/korrosync:latest" \
+  -t "${DOCKER_USERNAME}/korrosync:v${version}" \
   --push .
