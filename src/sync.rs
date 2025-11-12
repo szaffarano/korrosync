@@ -114,7 +114,7 @@ pub struct ProgressValue {
 }
 
 impl User {
-    /// Creatres a new user with the given username and plain password.
+    /// Creates a new user with the given username and plain password.
     /// The password is hashed before storing.
     /// More info: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
     pub fn new(username: impl Into<String>, password: impl Into<String>) -> Result<Self> {
@@ -169,7 +169,7 @@ where
         Self: 'a,
     {
         decode_from_slice(data, bincode::config::standard())
-            .unwrap()
+            .expect("Failed to decode bincode value")
             .0
     }
 
@@ -178,7 +178,7 @@ where
         Self: 'a,
         Self: 'b,
     {
-        encode_to_vec(value, bincode::config::standard()).unwrap()
+        encode_to_vec(value, bincode::config::standard()).expect("Failed to encode bincode value")
     }
 
     fn type_name() -> TypeName {

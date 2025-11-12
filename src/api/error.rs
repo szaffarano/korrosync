@@ -23,7 +23,6 @@ pub enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
-        println!(">>>>>>. into respose: {self:?}");
         // Log internal errors with full context for debugging
         let (status, message) = match &self {
             Error::InvalidInput(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),

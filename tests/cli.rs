@@ -16,7 +16,7 @@ async fn main_should_start_server() {
 async fn cli_should_start_server() {
     let path = NamedTempFile::new().expect("Creating temp file");
     let cmd = cargo_bin_cmd!("korrosync");
-    // _cmd is needed to kill the background process on dorp
+    // _cmd is needed to kill the background process on drop
     temp_env::async_with_vars(
         [(
             "KORROSYNC_DB_PATH",

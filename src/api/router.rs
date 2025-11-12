@@ -52,8 +52,7 @@ pub async fn serve(listener: TcpListener, state: AppState) -> Result<()> {
         app(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
     .with_graceful_shutdown(shutdown_signal())
-    .await
-    .expect("Failed to start server");
+    .await?;
 
     Ok(())
 }
@@ -81,6 +80,9 @@ async fn shutdown_signal() {
             .recv()
             .await;
     };
+
+    #[cfg(not(unix))]
+    let interrupt = std::future::pending::<()>();
 
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
