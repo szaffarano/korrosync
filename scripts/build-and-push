@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+#
+# requires:
+#  1. docker login
+#  2. docker buildx create --name multiarch --use
+#
+version="$(cargo pkgid | grep -oP '\d+\.\d+\.\d+')"
+platforms=(
+  "linux/amd64"
+  "linux/arm64"
+  "linux/arm/v7"
+)
+
+DOCKER_USERNAME="${DOCKER_USERNAME:-szaffarano}"
+
+docker buildx build \
+  --platform "$(echo "${platforms[*]}" | tr ' ' ',')" \
+  -t "${DOCKER_USERNAME}/korrosync:latest" \
+  -t "${DOCKER_USERNAME}/korrosync:v${version}" \
+  --push .

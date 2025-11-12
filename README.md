@@ -44,11 +44,23 @@ Pre-built binaries for Linux and macOS are available in the
 
 ### Docker
 
-Build and run with Docker:
+Docker images are uploaded in [Docker Hub](https://hub.docker.com/repository/docker/szaffarano/korrosync/tags).
+
+If you want to build the image yourself, use the following instructions.
 
 ```bash
-# Build Docker image
+# Build for your current platform
 docker build -t korrosync .
+
+# Multi-arch builds (requires buildx)
+# First, create a buildx builder if you haven't already
+docker buildx create --name multiarch --use
+
+# e.g., build for Raspberry Pi 3 and load locally
+docker buildx build \
+  --platform linux/arm/v7 \
+  -t korrosync:arm32 \
+  --load .
 
 # Run container
 docker run -d \
