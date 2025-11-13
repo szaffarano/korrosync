@@ -51,8 +51,8 @@ use crate::error::Result;
 ///
 /// # Thread Safety
 ///
-/// This struct is not `Sync` or `Send` by default due to the internal password hashing
-/// requirements. Synchronization should be handled at a higher level.
+/// This struct is `Send` and `Sync` by default, as it only contains thread-safe fields.
+/// Argon2 operations are performed in methods and do not affect thread safety.
 #[derive(Debug, Encode, Decode, Default)]
 pub struct User {
     username: String,
