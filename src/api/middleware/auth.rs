@@ -27,12 +27,13 @@ pub async fn auth(
         && let Some(key) = headers.get("x-auth-key").and_then(|v| v.to_str().ok())
     {
         if let Some(mut user) = state.sync.get_user(username)? {
+            // Check password first - if this fails, it's an authentication error
             user.check(key)
-                .and_then(|_| {
-                    user.touch();
-                    state.sync.add_user(&user)
-                })
                 .map_err(|_| Error::Unauthorized("Invalid credentials".to_string()))?;
+
+            // Update last activity - if this fails, it's a database error
+            user.touch();
+            state.sync.add_user(&user)?;
 
             let user = AuthenticatedUser(username.to_string(), user.last_activity());
             request.extensions_mut().insert(user);
