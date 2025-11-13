@@ -926,7 +926,7 @@ dependencies = [
 
 [[package]]
 name = "korrosync"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "argon2",
  "assert_cmd",
