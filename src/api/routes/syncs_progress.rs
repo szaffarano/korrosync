@@ -9,7 +9,7 @@ use serde_json::json;
 use tracing::{debug, info};
 
 use crate::api::{middleware::auth::AuthenticatedUser, state::AppState};
-use crate::sync::ProgressValue;
+use crate::sync::service::Progress;
 
 /// Create the syncs progress routes
 pub fn create_route() -> Router<AppState> {
@@ -45,7 +45,7 @@ struct ProgressResponse {
 #[tracing::instrument(level = tracing::Level::DEBUG, skip(state))]
 async fn update_progress(
     State(state): State<AppState>,
-    Extension(AuthenticatedUser(user)): Extension<AuthenticatedUser>,
+    Extension(AuthenticatedUser(user, _)): Extension<AuthenticatedUser>,
     Json(payload): Json<UpdateProgressRequest>,
 ) -> Result<impl IntoResponse, crate::api::error::Error> {
     debug!("Updating sync progress");
@@ -67,7 +67,7 @@ async fn update_progress(
 #[tracing::instrument(level = tracing::Level::DEBUG, skip(state))]
 async fn get_progress(
     State(state): State<AppState>,
-    Extension(AuthenticatedUser(user)): Extension<AuthenticatedUser>,
+    Extension(AuthenticatedUser(user, _)): Extension<AuthenticatedUser>,
     Path(doc): Path<String>,
 ) -> Result<Json<ProgressResponse>, crate::api::error::Error> {
     info!("Getting sync progress for doc: {}", doc);
@@ -80,7 +80,7 @@ async fn get_progress(
     }))
 }
 
-impl From<UpdateProgressRequest> for ProgressValue {
+impl From<UpdateProgressRequest> for Progress {
     fn from(value: UpdateProgressRequest) -> Self {
         Self {
             device_id: value.device_id,
@@ -92,8 +92,8 @@ impl From<UpdateProgressRequest> for ProgressValue {
     }
 }
 
-impl From<ProgressValue> for ProgressResponse {
-    fn from(value: ProgressValue) -> Self {
+impl From<Progress> for ProgressResponse {
+    fn from(value: Progress) -> Self {
         Self {
             device_id: value.device_id,
             device: value.device,

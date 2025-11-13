@@ -5,7 +5,7 @@ use tracing::{Level, debug, instrument};
 
 use crate::{
     api::{self, state::AppState},
-    sync::User,
+    model::User,
 };
 
 /// Register Router - handles user registration
@@ -28,7 +28,7 @@ async fn register(
 
     state
         .sync
-        .add_user(User::new(&payload.username, &payload.password)?)?;
+        .add_user(&User::new(&payload.username, &payload.password)?)?;
 
     Ok((
         StatusCode::CREATED,
