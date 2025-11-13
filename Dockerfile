@@ -3,7 +3,7 @@ FROM --platform=$BUILDPLATFORM rust:1-slim AS builder
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
-ARG ZIG_VERSION=0.15.2
+ARG ZIG_VERSION=0.15.0
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
