@@ -7,8 +7,8 @@ use tracing::debug;
 
 use crate::api::{error::Error, state::AppState};
 
-#[derive(Clone)]
-pub struct AuthenticatedUser(pub String);
+#[derive(Clone, Debug)]
+pub struct AuthenticatedUser(pub String, pub Option<i64>);
 
 /// Authentication middleware for protected routes
 ///
@@ -26,14 +26,19 @@ pub async fn auth(
     if let Some(username) = headers.get("x-auth-user").and_then(|v| v.to_str().ok())
         && let Some(key) = headers.get("x-auth-key").and_then(|v| v.to_str().ok())
     {
-        if let Some(user) = state.sync.get_user(username)? {
+        if let Some(mut user) = state.sync.get_user(username)? {
             user.check(key)
+                .and_then(|_| {
+                    user.touch();
+                    state.sync.add_user(&user)
+                })
                 .map_err(|_| Error::Unauthorized("Invalid credentials".to_string()))?;
-            let user = AuthenticatedUser(username.to_string());
+
+            let user = AuthenticatedUser(username.to_string(), user.last_activity());
             request.extensions_mut().insert(user);
             Ok(next.run(request).await)
         } else {
-            Err(Error::UserNotFound(username.to_string()))
+            Err(Error::UserNotFound(format!("Invalid user '{username}'")))
         }
     } else {
         Err(Error::Unauthorized("Missing credentials".to_string()))

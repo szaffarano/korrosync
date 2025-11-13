@@ -1,5 +1,6 @@
 use korrosync::api::{router::serve, state::AppState};
-use korrosync::sync::{KorrosyncService, User};
+use korrosync::model::User;
+use korrosync::sync::service::KorrosyncService;
 use reqwest::{Method, StatusCode};
 use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
@@ -83,7 +84,7 @@ async fn spawn_server() -> u16 {
 
     state
         .sync
-        .add_user(User::new("test", "test").expect("Error instantiating test user"))
+        .add_user(&User::new("test", "test").expect("Error instantiating test user"))
         .expect("Error inserting user");
 
     tokio::spawn(async move {

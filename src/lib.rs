@@ -2,7 +2,7 @@ use crate::{
     api::{router, state::AppState},
     config::Config,
     error::Result,
-    sync::KorrosyncService,
+    sync::service::KorrosyncService,
 };
 use tokio::net::TcpListener;
 
@@ -12,6 +12,7 @@ pub mod api;
 pub mod config;
 pub mod error;
 pub mod logging;
+pub mod model;
 pub mod sync;
 
 pub async fn run_server(cfg: Config) -> Result<()> {

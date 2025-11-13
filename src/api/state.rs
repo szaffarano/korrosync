@@ -1,4 +1,4 @@
-use crate::sync::KorrosyncService;
+use crate::sync::service::KorrosyncService;
 
 /// Application state shared across all routes
 #[derive(Clone)]
