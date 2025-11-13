@@ -39,7 +39,7 @@ pub async fn auth(
             request.extensions_mut().insert(user);
             Ok(next.run(request).await)
         } else {
-            Err(Error::UserNotFound(format!("Invalid user '{username}'")))
+            Err(Error::Unauthorized("Invalid credentials".to_string()))
         }
     } else {
         Err(Error::Unauthorized("Missing credentials".to_string()))
