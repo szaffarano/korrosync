@@ -36,8 +36,6 @@ pub enum ApiError {
     #[error("User '{0}' already exists")]
     ExistingUser(String),
 
-    // #[error("Password hashing failed: '{0}'")]
-    // HashError(argon2::password_hash::Error),
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
@@ -104,13 +102,6 @@ impl IntoResponse for ApiError {
                     message: all.to_string(),
                 },
             ),
-            // ApiError::HashError(err) => (
-            //     StatusCode::INTERNAL_SERVER_ERROR,
-            //     ApiErrorPayload {
-            //         code: "hash_error",
-            //         message: format!("{err}"),
-            //     },
-            // ),
             ApiError::Unauthorized(err) => (
                 StatusCode::UNAUTHORIZED,
                 ApiErrorPayload {
