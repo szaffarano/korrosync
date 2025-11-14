@@ -36,7 +36,7 @@ pub enum ApiError {
     #[error("User '{0}' already exists")]
     ExistingUser(String),
 
-    #[error("User '{0}' already exists")]
+    #[error("Password hashing failed: '{0}'")]
     HashError(argon2::password_hash::Error),
 
     #[error("Unauthorized: {0}")]
