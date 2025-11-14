@@ -29,8 +29,6 @@ use argon2::{
 use bincode::{Decode, Encode};
 use chrono::Utc;
 
-use crate::error::Result;
-
 /// User model representing an authenticated user in the system.
 ///
 /// This struct stores user credentials securely using Argon2 password hashing
@@ -94,7 +92,10 @@ impl User {
     /// # Security
     ///
     /// More info: <https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html>
-    pub fn new(username: impl Into<String>, password: impl Into<String>) -> Result<Self> {
+    pub fn new(
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Result<Self, argon2::password_hash::Error> {
         let password = password.into();
         let username = username.into();
 
@@ -169,7 +170,7 @@ impl User {
     ///
     /// This method is designed to be resistant to timing attacks through the use
     /// of constant-time comparison operations provided by the Argon2 implementation.
-    pub fn check(&self, password: impl AsRef<str>) -> Result<()> {
+    pub fn check(&self, password: impl AsRef<str>) -> Result<(), argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash)?;
         let argon2 = Argon2::default();
 

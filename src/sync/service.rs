@@ -49,9 +49,8 @@ use std::{fs::create_dir_all, path::Path, sync::Arc};
 use redb::{Database, ReadableDatabase, TableDefinition};
 
 use crate::{
-    error::{Error, Result},
     model::User,
-    sync::serialization::Bincode,
+    sync::{error::ServiceError, serialization::Bincode},
 };
 
 // Table definitions with versioning for future migration support
@@ -163,7 +162,7 @@ impl KorrosyncService {
     /// let service = KorrosyncService::new("data/databases/korrosync.db")?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn new(path: impl AsRef<Path>) -> Result<Self> {
+    pub fn new(path: impl AsRef<Path>) -> Result<Self, ServiceError> {
         let path = path.as_ref();
 
         // Create parent directories if they don't exist
@@ -173,13 +172,17 @@ impl KorrosyncService {
             create_dir_all(parent)?;
         }
 
-        let db = Database::create(path)?;
+        let db = Database::create(path).map_err(ServiceError::db)?;
 
         // create tables if not exist
-        let write_txn = db.begin_write()?;
-        write_txn.open_table(USERS_TABLE)?;
-        write_txn.open_table(PROGRESS_TABLE)?;
-        write_txn.commit()?;
+        let write_txn = db.begin_write().map_err(ServiceError::db)?;
+        write_txn
+            .open_table(USERS_TABLE)
+            .map_err(ServiceError::db)?;
+        write_txn
+            .open_table(PROGRESS_TABLE)
+            .map_err(ServiceError::db)?;
+        write_txn.commit().map_err(ServiceError::db)?;
 
         Ok(Self { db: Arc::new(db) })
     }
@@ -220,12 +223,15 @@ impl KorrosyncService {
     /// }
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn get_user(&self, name: impl Into<String>) -> Result<Option<User>> {
+    pub fn get_user(&self, name: impl Into<String>) -> Result<Option<User>, ServiceError> {
         let username = name.into();
-        let read_txn = self.db.begin_read()?;
-        let table = read_txn.open_table(USERS_TABLE)?;
+        let read_txn = self.db.begin_read().map_err(ServiceError::db)?;
+        let table = read_txn.open_table(USERS_TABLE).map_err(ServiceError::db)?;
 
-        let user = table.get(&*username)?.map(|hash| hash.value());
+        let user = table
+            .get(&*username)
+            .map_err(ServiceError::db)?
+            .map(|hash| hash.value());
 
         Ok(user)
     }
@@ -266,13 +272,17 @@ impl KorrosyncService {
     ///
     /// This operation is transactional. If an error occurs after the insert
     /// but before commit, the entire transaction will be rolled back.
-    pub fn add_user(&self, user: &User) -> Result<()> {
-        let write_txn = self.db.begin_write()?;
+    pub fn add_user(&self, user: &User) -> Result<(), ServiceError> {
+        let write_txn = self.db.begin_write().map_err(ServiceError::db)?;
         {
-            let mut table = write_txn.open_table(USERS_TABLE)?;
-            table.insert(user.username(), user)?;
+            let mut table = write_txn
+                .open_table(USERS_TABLE)
+                .map_err(ServiceError::db)?;
+            table
+                .insert(user.username(), user)
+                .map_err(ServiceError::db)?;
         }
-        write_txn.commit()?;
+        write_txn.commit().map_err(ServiceError::db)?;
 
         Ok(())
     }
@@ -332,17 +342,19 @@ impl KorrosyncService {
         user: impl Into<String>,
         document: impl Into<String>,
         progress: Progress,
-    ) -> Result<(String, u64)> {
+    ) -> Result<(String, u64), ServiceError> {
         let user = user.into();
         let document = document.into();
         let key = ProgressKey { document, user };
 
-        let write_txn = self.db.begin_write()?;
+        let write_txn = self.db.begin_write().map_err(ServiceError::db)?;
         {
-            let mut table = write_txn.open_table(PROGRESS_TABLE)?;
-            table.insert(&key, &progress)?;
+            let mut table = write_txn
+                .open_table(PROGRESS_TABLE)
+                .map_err(ServiceError::db)?;
+            table.insert(&key, &progress).map_err(ServiceError::db)?;
         }
-        write_txn.commit()?;
+        write_txn.commit().map_err(ServiceError::db)?;
 
         Ok((key.document, progress.timestamp))
     }
@@ -385,16 +397,18 @@ impl KorrosyncService {
     /// }
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn get_progress(&self, user: String, document: String) -> Result<Progress> {
+    pub fn get_progress(&self, user: String, document: String) -> Result<Progress, ServiceError> {
         let key = ProgressKey { document, user };
 
-        let read_txn = self.db.begin_read()?;
-        let table = read_txn.open_table(PROGRESS_TABLE)?;
+        let read_txn = self.db.begin_read().map_err(ServiceError::db)?;
+        let table = read_txn
+            .open_table(PROGRESS_TABLE)
+            .map_err(ServiceError::db)?;
 
-        if let Some(progress) = table.get(&key)? {
+        if let Some(progress) = table.get(&key).map_err(ServiceError::db)? {
             Ok(progress.value())
         } else {
-            Err(Error::NotFound(
+            Err(ServiceError::NotFound(
                 "Progress not found for document".to_string(),
             ))
         }
@@ -643,7 +657,7 @@ mod tests {
             "Should return error for non-existent progress"
         );
         match result {
-            Err(Error::NotFound(_)) => {} // Expected
+            Err(ServiceError::NotFound(_)) => {} // Expected
             _ => panic!("Expected NotFound error"),
         }
     }

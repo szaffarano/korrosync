@@ -65,7 +65,11 @@ async fn register_fails_with_empty_username() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Username and password cannot be empty");
+    assert_eq!(body_json["code"], "invalid_input");
+    assert_eq!(
+        body_json["message"],
+        "Invalid input: Username and password cannot be empty"
+    );
 }
 
 #[tokio::test]
@@ -96,7 +100,11 @@ async fn register_fails_with_empty_password() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Username and password cannot be empty");
+    assert_eq!(body_json["code"], "invalid_input");
+    assert_eq!(
+        body_json["message"],
+        "Invalid input: Username and password cannot be empty"
+    );
 }
 
 #[tokio::test]
@@ -127,7 +135,8 @@ async fn register_fails_with_duplicate_user() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "User 'test' already exists");
+    assert_eq!(body_json["message"], "User 'test' already exists");
+    assert_eq!(body_json["code"], "existing_user");
 }
 
 #[tokio::test]

@@ -1,12 +1,12 @@
-use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
-use serde::Deserialize;
-use serde_json::json;
-use tracing::{Level, debug, instrument};
-
 use crate::{
-    api::{self, state::AppState},
+    api::{error::ApiError, state::AppState},
     model::User,
 };
+use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
+use axum_extra::extract::WithRejection;
+use serde::Deserialize;
+use serde_json::json;
+use tracing::{Level, instrument};
 
 /// Register Router - handles user registration
 pub fn create_route() -> Router<AppState> {
@@ -16,19 +16,17 @@ pub fn create_route() -> Router<AppState> {
 #[instrument(level = Level::DEBUG, skip(payload, state))]
 async fn register(
     State(state): State<AppState>,
-    Json(payload): Json<RegisterUser>,
-) -> Result<impl IntoResponse, api::error::Error> {
-    debug!("register requested for user: {}", payload.username);
-
+    WithRejection(Json(payload), _): WithRejection<Json<RegisterUser>, ApiError>,
+) -> Result<impl IntoResponse, ApiError> {
     payload.validate()?;
 
     if (state.sync.get_user(&payload.username)?).is_some() {
-        return Err(api::error::Error::ExistingUser(payload.username));
+        return Err(ApiError::ExistingUser(payload.username));
     }
 
     state
         .sync
-        .add_user(&User::new(&payload.username, &payload.password)?)?;
+        .add_user(&User::new(&payload.username, &payload.password).map_err(ApiError::HashError)?)?;
 
     Ok((
         StatusCode::CREATED,
@@ -43,10 +41,9 @@ struct RegisterUser {
 }
 
 impl RegisterUser {
-    fn validate(&self) -> Result<(), api::error::Error> {
+    fn validate(&self) -> Result<(), ApiError> {
         if self.username.is_empty() || self.password.is_empty() {
-            debug!("registration failed: username or key is empty");
-            return Err(api::error::Error::InvalidInput(
+            return Err(ApiError::InvalidInput(
                 "Username and password cannot be empty".into(),
             ));
         }

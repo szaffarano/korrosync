@@ -1,10 +1,11 @@
-use std::error::Error;
-
+use color_eyre::eyre;
 use korrosync::config::Config;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
+
     let cfg = Config::from_env();
 
-    Ok(korrosync::run_server(cfg).await?)
+    korrosync::run_server(cfg).await
 }
