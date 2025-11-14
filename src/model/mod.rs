@@ -59,6 +59,7 @@ pub struct User {
     password_hash: String,
     last_activity: Option<i64>,
 }
+
 impl User {
     /// Creates a new user with the given username and plain password.
     ///

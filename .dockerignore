@@ -1,6 +1,12 @@
 data
+Dockerfile
+.env
 flake.lock
 flake.nix
+migrations/
 README.md
 result
+scripts/
 target
+target/
+tests/
