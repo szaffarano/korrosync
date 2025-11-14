@@ -36,11 +36,13 @@ pub enum ApiError {
     #[error("User '{0}' already exists")]
     ExistingUser(String),
 
-    #[error("Password hashing failed: '{0}'")]
-    HashError(argon2::password_hash::Error),
-
+    // #[error("Password hashing failed: '{0}'")]
+    // HashError(argon2::password_hash::Error),
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
+
+    #[error(transparent)]
+    Runtime(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl From<ServiceError> for ApiError {
@@ -102,13 +104,13 @@ impl IntoResponse for ApiError {
                     message: all.to_string(),
                 },
             ),
-            ApiError::HashError(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                ApiErrorPayload {
-                    code: "hash_error",
-                    message: format!("{err}"),
-                },
-            ),
+            // ApiError::HashError(err) => (
+            //     StatusCode::INTERNAL_SERVER_ERROR,
+            //     ApiErrorPayload {
+            //         code: "hash_error",
+            //         message: format!("{err}"),
+            //     },
+            // ),
             ApiError::Unauthorized(err) => (
                 StatusCode::UNAUTHORIZED,
                 ApiErrorPayload {
@@ -116,8 +118,21 @@ impl IntoResponse for ApiError {
                     message: err.to_string(),
                 },
             ),
+            ApiError::Runtime(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorPayload {
+                    code: "runtime_error",
+                    message: err.to_string(),
+                },
+            ),
         };
 
         (status, Json(payload)).into_response()
+    }
+}
+
+impl ApiError {
+    pub fn runtime(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        ApiError::Runtime(Box::new(e))
     }
 }

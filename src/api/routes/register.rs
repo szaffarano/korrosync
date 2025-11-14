@@ -26,7 +26,7 @@ async fn register(
 
     state
         .sync
-        .add_user(&User::new(&payload.username, &payload.password).map_err(ApiError::HashError)?)?;
+        .add_user(&User::new(&payload.username, &payload.password).map_err(ApiError::runtime)?)?;
 
     Ok((
         StatusCode::CREATED,

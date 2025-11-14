@@ -1,3 +1,4 @@
+use argon2::password_hash;
 use axum::{
     extract::{Request, State},
     middleware::Next,
@@ -28,8 +29,12 @@ pub async fn auth(
     {
         if let Some(mut user) = state.sync.get_user(username)? {
             // Check password first - if this fails, it's an authentication error
-            user.check(key)
-                .map_err(|_| ApiError::Unauthorized("Invalid credentials".to_string()))?;
+            user.check(key).map_err(|e| match e {
+                password_hash::Error::Password => {
+                    ApiError::Unauthorized("Invalid credentials".to_string())
+                }
+                e => ApiError::runtime(e),
+            })?;
 
             // Update last activity - if this fails, it's a database error
             user.touch();
