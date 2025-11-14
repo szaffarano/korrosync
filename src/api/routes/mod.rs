@@ -1,3 +1,4 @@
+pub mod fallback;
 pub mod healthcheck;
 pub mod register;
 pub mod robots;

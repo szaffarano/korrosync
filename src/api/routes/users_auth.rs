@@ -14,17 +14,24 @@ pub fn create_route() -> Router<AppState> {
 struct AuthResponse {
     authorized: String,
     username: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     last_activity: Option<i64>,
 }
 
 /// Handler for GET /users/auth
 ///
 /// Returns authentication status
-#[tracing::instrument(level = tracing::Level::DEBUG)]
+#[tracing::instrument(
+    skip_all,
+    fields(
+        correlation_id = %uuid::Uuid::new_v4(),
+        username=username,
+    )
+)]
 async fn get_auth_user(
     Extension(AuthenticatedUser(username, last_activity)): Extension<AuthenticatedUser>,
 ) -> Result<Json<AuthResponse>, StatusCode> {
-    info!("User auth check requested: {username}");
+    info!("User auth check requested");
 
     let response = AuthResponse {
         authorized: "OK".to_string(),

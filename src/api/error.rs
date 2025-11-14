@@ -27,7 +27,7 @@ impl IntoResponse for Error {
         let (status, message) = match &self {
             Error::InvalidInput(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
             Error::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg.to_string()),
-            Error::ExistingUser(msg) => (StatusCode::PAYMENT_REQUIRED, msg.to_string()),
+            Error::ExistingUser(_) => (StatusCode::PAYMENT_REQUIRED, format!("{}", self)),
             Error::UserNotFound(msg) => (StatusCode::NOT_FOUND, msg.to_string()),
             Error::Internal(err) => {
                 error!("Internal error: {:?}", err);

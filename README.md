@@ -1,8 +1,15 @@
 # Korrosync
 
-> A modern, high-performance KOReader sync server written in Rust
+<div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![codecov](https://codecov.io/gh/szaffarano/korrosync/graph/badge.svg?token=4D0LOB1XSV)](https://codecov.io/gh/szaffarano/korrosync)
+[![CI](https://github.com/szaffarano/korrosync/actions/workflows/ci.yml/badge.svg)](https://github.com/szaffarano/korrosync/actions/workflows/ci.yml)
+[![Dependency Status](https://deps.rs/repo/github/szaffarano/korrosync/status.svg)](https://deps.rs/repo/github/szaffarano/korrosync)
+
+</div>
+
+> A modern, high-performance KOReader sync server written in Rust
 
 ## Overview
 

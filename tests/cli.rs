@@ -4,15 +4,23 @@ use tempfile::NamedTempFile;
 use tokio_retry2::{Retry, RetryError, strategy::FixedInterval};
 
 #[tokio::test]
+#[serial_test::serial]
 async fn main_should_start_server() {
     let path = NamedTempFile::new().expect("Creating temp file");
     let mut cfg = Config::from_env();
     cfg.db.path = path.path().to_string_lossy().to_string();
-    tokio::spawn(korrosync::run_server(cfg));
-    assert_server().await;
+    let app = tokio::spawn(korrosync::run_server(cfg));
+    let asserter = assert_server();
+    tokio::select! {
+        _ = app =>
+            panic!("Server task exited unexpectedly")
+        ,
+        _ = asserter => { },
+    }
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn cli_should_start_server() {
     let path = NamedTempFile::new().expect("Creating temp file");
     let cmd = cargo_bin_cmd!("korrosync");
@@ -40,6 +48,10 @@ async fn assert_server() {
             .get("http://127.0.0.1:3000/invalid")
             .send()
             .await
+            .map_err(|e| {
+                println!("Request failed: {e}, retrying...");
+                e
+            })
             .map_err(RetryError::transient)
     })
     .await;
