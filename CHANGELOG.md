@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/szaffarano/korrosync/compare/v0.1.1...v0.1.2) - 2025-11-14
+
+### Added
+
+- *(renovate)* Add zig to renovate config ([#26](https://github.com/szaffarano/korrosync/pull/26))
+
+### Other
+
+- Improve error handling ([#32](https://github.com/szaffarano/korrosync/pull/32))
+- *(deps)* update rust crate governor to v0.10.2 ([#29](https://github.com/szaffarano/korrosync/pull/29))
+- Improve coverage ([#31](https://github.com/szaffarano/korrosync/pull/31))
+- *(deps)* update rust crate tokio-retry2 to 0.7.0 ([#30](https://github.com/szaffarano/korrosync/pull/30))
+- *(deps)* update dependency ziglang/zig to v0.15.1 ([#27](https://github.com/szaffarano/korrosync/pull/27))
+
 ## [0.1.1](https://github.com/szaffarano/korrosync/releases/tag/v0.1.0) - 2025-11-13
 
 ### Added
