@@ -47,11 +47,7 @@ impl From<ServiceError> for ApiError {
     fn from(value: ServiceError) -> Self {
         match value {
             all @ ServiceError::Io(_) => ApiError::Service(all),
-
-            all @ ServiceError::NotFound(_) => {
-                ApiError::NotFound(ServiceError::NotFound(format!("{all}")))
-            }
-
+            all @ ServiceError::NotFound(_) => ApiError::NotFound(all),
             all @ ServiceError::DB(_) => ApiError::Service(all),
         }
     }
