@@ -51,7 +51,8 @@ async fn users_auth_fails_with_missing_auth_user_header() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -76,7 +77,8 @@ async fn users_auth_fails_with_missing_auth_key_header() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -101,7 +103,8 @@ async fn users_auth_fails_with_invalid_username() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Invalid credentials");
+    assert_eq!(body_json["message"], "Invalid credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -126,7 +129,8 @@ async fn users_auth_fails_with_invalid_password() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Invalid credentials");
+    assert_eq!(body_json["message"], "Invalid credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]

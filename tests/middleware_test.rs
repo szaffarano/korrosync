@@ -60,7 +60,8 @@ async fn auth_middleware_rejects_missing_x_auth_user() {
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
     assert_eq!(StatusCode::UNAUTHORIZED, status);
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -85,7 +86,8 @@ async fn auth_middleware_rejects_missing_x_auth_key() {
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
     assert_eq!(StatusCode::UNAUTHORIZED, status);
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -109,7 +111,8 @@ async fn auth_middleware_rejects_missing_both_headers() {
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
     assert_eq!(StatusCode::UNAUTHORIZED, status);
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -134,7 +137,8 @@ async fn auth_middleware_rejects_invalid_username() {
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
     assert_eq!(StatusCode::UNAUTHORIZED, status);
-    assert_eq!(body_json["error"], "Invalid credentials");
+    assert_eq!(body_json["message"], "Invalid credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -159,7 +163,8 @@ async fn auth_middleware_rejects_invalid_password() {
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
     assert_eq!(StatusCode::UNAUTHORIZED, status);
-    assert_eq!(body_json["error"], "Invalid credentials");
+    assert_eq!(body_json["message"], "Invalid credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]

@@ -1,3 +1,4 @@
+use argon2::password_hash;
 use axum::{
     extract::{Request, State},
     middleware::Next,
@@ -5,7 +6,7 @@ use axum::{
 };
 use tracing::debug;
 
-use crate::api::{error::Error, state::AppState};
+use crate::api::{error::ApiError, state::AppState};
 
 #[derive(Clone, Debug)]
 pub struct AuthenticatedUser(pub String, pub Option<i64>);
@@ -18,7 +19,7 @@ pub async fn auth(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,
-) -> Result<Response, Error> {
+) -> Result<Response, ApiError> {
     debug!("Auth middleware invoked");
 
     let headers = request.headers();
@@ -28,8 +29,12 @@ pub async fn auth(
     {
         if let Some(mut user) = state.sync.get_user(username)? {
             // Check password first - if this fails, it's an authentication error
-            user.check(key)
-                .map_err(|_| Error::Unauthorized("Invalid credentials".to_string()))?;
+            user.check(key).map_err(|e| match e {
+                password_hash::Error::Password => {
+                    ApiError::Unauthorized("Invalid credentials".to_string())
+                }
+                e => ApiError::runtime(e),
+            })?;
 
             // Update last activity - if this fails, it's a database error
             user.touch();
@@ -39,9 +44,9 @@ pub async fn auth(
             request.extensions_mut().insert(user);
             Ok(next.run(request).await)
         } else {
-            Err(Error::Unauthorized("Invalid credentials".to_string()))
+            Err(ApiError::Unauthorized("Invalid credentials".to_string()))
         }
     } else {
-        Err(Error::Unauthorized("Missing credentials".to_string()))
+        Err(ApiError::Unauthorized("Missing credentials".to_string()))
     }
 }

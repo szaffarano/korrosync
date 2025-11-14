@@ -1,5 +1,5 @@
 use axum::{Router, http::StatusCode, routing::get};
-use tracing::{Level, debug, instrument};
+use tracing::{Level, instrument};
 
 use crate::api::state::AppState;
 
@@ -10,20 +10,5 @@ pub fn create_route() -> Router<AppState> {
 
 #[instrument(level = Level::DEBUG)]
 async fn get_health_check() -> StatusCode {
-    debug!("health-check requested");
     StatusCode::OK
-}
-
-#[cfg(test)]
-mod tests {
-    use axum::http::StatusCode;
-
-    use crate::api::routes::healthcheck::get_health_check;
-
-    #[tokio::test]
-    async fn test_health_check() {
-        let status = get_health_check().await;
-
-        assert_eq!(status, StatusCode::OK);
-    }
 }

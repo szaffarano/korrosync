@@ -4,12 +4,16 @@ use axum::{
     response::IntoResponse,
     routing::{get, put},
 };
+use axum_extra::extract::WithRejection;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info};
 
-use crate::api::{middleware::auth::AuthenticatedUser, state::AppState};
 use crate::sync::service::Progress;
+use crate::{
+    api::{error::ApiError, middleware::auth::AuthenticatedUser, state::AppState},
+    sync::error::ServiceError,
+};
 
 /// Create the syncs progress routes
 pub fn create_route() -> Router<AppState> {
@@ -46,8 +50,8 @@ struct ProgressResponse {
 async fn update_progress(
     State(state): State<AppState>,
     Extension(AuthenticatedUser(user, _)): Extension<AuthenticatedUser>,
-    Json(payload): Json<UpdateProgressRequest>,
-) -> Result<impl IntoResponse, crate::api::error::Error> {
+    WithRejection(Json(payload), _): WithRejection<Json<UpdateProgressRequest>, ApiError>,
+) -> Result<impl IntoResponse, ApiError> {
     debug!("Updating sync progress");
 
     let (doc, ts) = state
@@ -68,16 +72,21 @@ async fn update_progress(
 async fn get_progress(
     State(state): State<AppState>,
     Extension(AuthenticatedUser(user, _)): Extension<AuthenticatedUser>,
-    Path(doc): Path<String>,
-) -> Result<Json<ProgressResponse>, crate::api::error::Error> {
+    WithRejection(Path(doc), _): WithRejection<Path<String>, ApiError>,
+) -> Result<impl IntoResponse, ApiError> {
     info!("Getting sync progress for doc: {}", doc);
 
-    let progress = state.sync.get_progress(user, doc.clone())?;
+    let progress = state.sync.get_progress(user, doc.clone());
 
-    Ok(Json(ProgressResponse {
-        document: doc,
-        ..progress.into()
-    }))
+    match progress {
+        Ok(progress) => Ok(Json(ProgressResponse {
+            document: doc,
+            ..progress.into()
+        })
+        .into_response()),
+        Err(ServiceError::NotFound(_)) => Ok(Json(json!({})).into_response()),
+        Err(e) => Err(e.into()),
+    }
 }
 
 impl From<UpdateProgressRequest> for Progress {

@@ -1,50 +1,125 @@
-use axum::{Json, http::StatusCode, response::IntoResponse};
-use serde_json::json;
+use axum::{
+    Json,
+    extract::rejection::{JsonRejection, PathRejection},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::error;
 
+use crate::sync::error::ServiceError;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ApiErrorPayload {
+    pub code: &'static str,
+    pub message: String,
+}
+
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum ApiError {
+    #[error("{0}")]
+    PathRejection(#[from] PathRejection),
+
+    #[error("{0}")]
+    JsonRejection(#[from] JsonRejection),
+
+    #[error("{0}")]
+    Service(ServiceError),
+
+    #[error("{0}")]
+    NotFound(ServiceError),
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
-
-    #[error("Unauthorized: {0}")]
-    Unauthorized(String),
 
     #[error("User '{0}' already exists")]
     ExistingUser(String),
 
-    #[error("User '{0}' not found")]
-    UserNotFound(String),
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
 
-    #[error("Internal server error")]
-    Internal(#[from] crate::error::Error),
+    #[error(transparent)]
+    Runtime(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        // Log internal errors with full context for debugging
-        let (status, message) = match &self {
-            Error::InvalidInput(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
-            Error::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg.to_string()),
-            Error::ExistingUser(_) => (StatusCode::PAYMENT_REQUIRED, format!("{}", self)),
-            Error::UserNotFound(msg) => (StatusCode::NOT_FOUND, msg.to_string()),
-            Error::Internal(err) => {
-                error!("Internal error: {:?}", err);
+impl From<ServiceError> for ApiError {
+    fn from(value: ServiceError) -> Self {
+        match value {
+            all @ ServiceError::Io(_) => ApiError::Service(all),
+            all @ ServiceError::NotFound(_) => ApiError::NotFound(all),
+            all @ ServiceError::DB(_) => ApiError::Service(all),
+        }
+    }
+}
 
-                if matches!(err, crate::error::Error::NotFound(_)) {
-                    // not a real error, return an empty json (it seems it's expected by the
-                    // koreader client)
-                    return (StatusCode::OK, Json(json!({}))).into_response();
-                }
-                // Log the actual error with full context
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error".to_string(),
-                )
-            }
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, payload) = match self {
+            ApiError::PathRejection(_) => (
+                StatusCode::BAD_REQUEST,
+                ApiErrorPayload {
+                    code: "bad_request",
+                    message: "Invalid path parameter".to_string(),
+                },
+            ),
+            ApiError::JsonRejection(ref e) => (
+                StatusCode::BAD_REQUEST,
+                ApiErrorPayload {
+                    code: "bad_request",
+                    message: e.to_string(),
+                },
+            ),
+            ApiError::Service(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorPayload {
+                    code: "io_failure",
+                    message: format!("{err}"),
+                },
+            ),
+            ApiError::NotFound(err) => (
+                StatusCode::NOT_FOUND,
+                ApiErrorPayload {
+                    code: "not_found",
+                    message: format!("{err}"),
+                },
+            ),
+            all @ ApiError::InvalidInput(_) => (
+                StatusCode::BAD_REQUEST,
+                ApiErrorPayload {
+                    code: "invalid_input",
+                    message: all.to_string(),
+                },
+            ),
+            all @ ApiError::ExistingUser(_) => (
+                StatusCode::PAYMENT_REQUIRED,
+                ApiErrorPayload {
+                    code: "existing_user",
+                    message: all.to_string(),
+                },
+            ),
+            ApiError::Unauthorized(err) => (
+                StatusCode::UNAUTHORIZED,
+                ApiErrorPayload {
+                    code: "unauthorized",
+                    message: err.to_string(),
+                },
+            ),
+            ApiError::Runtime(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiErrorPayload {
+                    code: "runtime_error",
+                    message: err.to_string(),
+                },
+            ),
         };
 
-        (status, Json(json!({ "error": message }))).into_response()
+        (status, Json(payload)).into_response()
+    }
+}
+
+impl ApiError {
+    pub fn runtime(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        ApiError::Runtime(Box::new(e))
     }
 }

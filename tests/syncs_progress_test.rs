@@ -73,7 +73,8 @@ async fn put_syncs_progress_fails_without_auth() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]
@@ -211,7 +212,8 @@ async fn get_syncs_progress_fails_without_auth() {
     let body_json: serde_json::Value =
         serde_json::from_str(&body_str).expect("Invalid JSON response");
 
-    assert_eq!(body_json["error"], "Missing credentials");
+    assert_eq!(body_json["message"], "Missing credentials");
+    assert_eq!(body_json["code"], "unauthorized");
 }
 
 #[tokio::test]

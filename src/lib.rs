@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use color_eyre::eyre;
 use tokio::{net::TcpListener, signal};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
@@ -7,7 +8,6 @@ use tracing::info;
 use crate::{
     api::{middleware::ratelimiter::rate_limiter_layer, router::app, state::AppState},
     config::Config,
-    error::Result,
     sync::service::KorrosyncService,
 };
 
@@ -15,12 +15,11 @@ use crate::logging::init_logging;
 
 pub mod api;
 pub mod config;
-pub mod error;
 pub mod logging;
 pub mod model;
 pub mod sync;
 
-pub async fn run_server(cfg: Config) -> Result<()> {
+pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     init_logging();
 
     let listener = TcpListener::bind(cfg.server.address).await?;
@@ -44,7 +43,7 @@ pub async fn run_server(cfg: Config) -> Result<()> {
     shutdown_token_cleanup.cancel();
     cleanup_task.await.map_err(|e| {
         tracing::error!("Rate limiter cleanup task failed: {}", e);
-        crate::error::Error::Custom("Rate limit cleanup task failed".to_string())
+        e
     })?;
 
     info!("Server shutdown complete");
