@@ -79,10 +79,10 @@ async fn get_progress(
     let progress = state.sync.get_progress(user, doc.clone());
 
     match progress {
-        Ok(progress) => Ok(Json(json!(ProgressResponse {
+        Ok(progress) => Ok(Json(ProgressResponse {
             document: doc,
             ..progress.into()
-        }))
+        })
         .into_response()),
         Err(ServiceError::NotFound(_)) => Ok(Json(json!({})).into_response()),
         Err(e) => Err(e.into()),
