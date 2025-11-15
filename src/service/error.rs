@@ -7,9 +7,6 @@ pub enum ServiceError {
 
     #[error(transparent)]
     DB(Box<dyn std::error::Error + Send + Sync>),
-
-    #[error("Progress not found: {0}")]
-    NotFound(String),
 }
 
 impl ServiceError {

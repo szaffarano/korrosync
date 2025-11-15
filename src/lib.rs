@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
 use color_eyre::eyre;
 use tokio::{net::TcpListener, signal};
@@ -8,7 +8,7 @@ use tracing::info;
 use crate::{
     api::{middleware::ratelimiter::rate_limiter_layer, router::app, state::AppState},
     config::Config,
-    sync::service::KorrosyncService,
+    service::db::KorrosyncServiceRedb,
 };
 
 use crate::logging::init_logging;
@@ -17,14 +17,14 @@ pub mod api;
 pub mod config;
 pub mod logging;
 pub mod model;
-pub mod sync;
+pub mod service;
 
 pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     init_logging();
 
     let listener = TcpListener::bind(cfg.server.address).await?;
     let state = AppState {
-        sync: KorrosyncService::new(cfg.db.path)?,
+        sync: Arc::new(KorrosyncServiceRedb::new(cfg.db.path)?),
     };
 
     let shutdown_token_cleanup = CancellationToken::new();

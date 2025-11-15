@@ -9,10 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info};
 
-use crate::sync::service::Progress;
 use crate::{
     api::{error::ApiError, middleware::auth::AuthenticatedUser, state::AppState},
-    sync::error::ServiceError,
+    service::db::Progress,
 };
 
 /// Create the syncs progress routes
@@ -79,12 +78,12 @@ async fn get_progress(
     let progress = state.sync.get_progress(user, doc.clone());
 
     match progress {
-        Ok(progress) => Ok(Json(ProgressResponse {
+        Ok(Some(progress)) => Ok(Json(ProgressResponse {
             document: doc,
             ..progress.into()
         })
         .into_response()),
-        Err(ServiceError::NotFound(_)) => Ok(Json(json!({})).into_response()),
+        Ok(None) => Ok(Json(json!({})).into_response()),
         Err(e) => Err(e.into()),
     }
 }

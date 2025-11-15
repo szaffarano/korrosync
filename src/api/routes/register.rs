@@ -20,13 +20,13 @@ async fn register(
 ) -> Result<impl IntoResponse, ApiError> {
     payload.validate()?;
 
-    if (state.sync.get_user(&payload.username)?).is_some() {
+    if (state.sync.get_user(payload.username.to_string())?).is_some() {
         return Err(ApiError::ExistingUser(payload.username));
     }
 
-    state
-        .sync
-        .add_user(&User::new(&payload.username, &payload.password).map_err(ApiError::runtime)?)?;
+    state.sync.create_or_update_user(
+        &User::new(&payload.username, &payload.password).map_err(ApiError::runtime)?,
+    )?;
 
     Ok((
         StatusCode::CREATED,

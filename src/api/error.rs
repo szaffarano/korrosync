@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::error;
 
-use crate::sync::error::ServiceError;
+use crate::{model, service::error::ServiceError};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiErrorPayload {
@@ -47,8 +47,15 @@ impl From<ServiceError> for ApiError {
     fn from(value: ServiceError) -> Self {
         match value {
             all @ ServiceError::Io(_) => ApiError::Service(all),
-            all @ ServiceError::NotFound(_) => ApiError::NotFound(all),
             all @ ServiceError::DB(_) => ApiError::Service(all),
+        }
+    }
+}
+
+impl From<model::Error> for ApiError {
+    fn from(value: model::Error) -> Self {
+        match value {
+            model::Error::Runtime(e) => ApiError::Runtime(e),
         }
     }
 }
