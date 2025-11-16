@@ -131,7 +131,8 @@ impl User {
     ///
     /// # Returns
     ///
-    /// Returns `Ok(true)` A bool indicates whether the password matches, or an error if verification fails.
+    /// Returns `Ok(true)` if the password matches, `Ok(false)` if it doesn't, or an error if
+    /// verification fails.
     ///
     /// # Example
     ///

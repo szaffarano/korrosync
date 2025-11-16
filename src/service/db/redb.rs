@@ -657,7 +657,7 @@ mod tests {
             .get_progress("alice".to_string(), "book2.epub".to_string())
             .expect("Failed to get book2 progress");
 
-        assert!(book2_retrieved.is_some());
+        assert!(book1_retrieved.is_some());
         assert!(book2_retrieved.is_some());
         assert_eq!(book1_retrieved.unwrap().percentage, 30.0);
         assert_eq!(book2_retrieved.unwrap().percentage, 70.0);

@@ -7,7 +7,7 @@
 //! # Route Modules
 //!
 //! ## Public Routes (No Authentication Required)
-//
+//!
 //! - **[`register`]** - `POST /users/create`
 //!   - User registration endpoint
 //!
