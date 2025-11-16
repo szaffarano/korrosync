@@ -12,6 +12,10 @@ description = "A KOReader Sync Server "
 [lib]
 path = "./src/lib.rs"
 
+[features]
+default = []
+tls = ["axum-server/tls-rustls"]
+
 [[bin]]
 path = "./src/main.rs"
 name = "korrosync"
@@ -20,7 +24,7 @@ name = "korrosync"
 argon2 = { version = "0.5.3", features = ["std"] }
 axum = { version = "0.8.6", features = ["http2", "macros", "multipart"] }
 axum-extra = { version = "0.12.1", features = ["with-rejection"] }
-axum-server = { version = "0.7.3", features = ["tls-rustls"] }
+axum-server = "0.7.3"
 bincode = "2.0.1"
 chrono = "0.4.42"
 color-eyre = "0.6.5"

@@ -51,9 +51,34 @@
 //! The server can be configured via environment variables:
 //! - `KORROSYNC_SERVER_ADDRESS` - Server bind address (default: 0.0.0.0:3000)
 //! - `KORROSYNC_DB_PATH` - Database file path (default: data/db.redb)
+//!
+//! When the `tls` feature is enabled:
 //! - `KORROSYNC_USE_TLS` - Enable TLS/HTTPS (default: false, accepts: true/1/yes/on or false/0/no/off)
 //! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
 //! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
+//!
+//! # Features
+//!
+//! This crate supports the following optional cargo features:
+//!
+//! ## `tls`
+//!
+//! Enables native TLS/HTTPS support using `rustls` via `axum-server`. When enabled, the server
+//! can accept HTTPS connections directly without requiring a reverse proxy.
+//!
+//! **Compile-time enablement:**
+//! ```bash
+//! cargo build --release --features tls
+//! ```
+//!
+//! **What it provides:**
+//! - Direct HTTPS support using the rustls TLS implementation
+//! - TLS configuration fields in [`config::Server`]
+//! - Runtime TLS enable/disable via `KORROSYNC_USE_TLS` environment variable
+//! - Certificate and private key file handling
+//!
+//! **Note:** Without this feature, the server only supports HTTP. You can still use HTTPS
+//! by deploying behind a reverse proxy like Nginx or Caddy.
 //!
 //! # KOReader Compatibility
 //!
@@ -64,9 +89,13 @@
 //!
 //! Configure your KOReader device to point to your server URL to start syncing.
 
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+#[cfg(feature = "tls")]
+use std::path::PathBuf;
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use axum_server::{Handle, tls_rustls::RustlsConfig};
+use axum_server::Handle;
+#[cfg(feature = "tls")]
+use axum_server::tls_rustls::RustlsConfig;
 use color_eyre::eyre::{self, Context};
 use tokio::{signal, time::sleep};
 use tokio_util::sync::CancellationToken;
@@ -111,22 +140,36 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     let shutdown_handle = Handle::new();
     tokio::spawn(shutdown_signal(shutdown_handle.clone()));
 
-    if cfg.server.use_tls {
-        info!("TLS Server listening on {}", &addr);
+    #[cfg(feature = "tls")]
+    {
+        if cfg.server.use_tls {
+            info!("TLS Server listening on {}", &addr);
 
-        let tls_config = RustlsConfig::from_pem_file(
-            PathBuf::from(cfg.server.cert_path),
-            PathBuf::from(cfg.server.key_path),
-        )
-        .await
-        .context("Error loading TLS keys")?;
-
-        axum_server::bind_rustls(addr, tls_config)
-            .handle(shutdown_handle)
-            .serve(app)
+            let tls_config = RustlsConfig::from_pem_file(
+                PathBuf::from(cfg.server.cert_path),
+                PathBuf::from(cfg.server.key_path),
+            )
             .await
-            .context("Failed to start TLS server")?;
-    } else {
+            .context("Error loading TLS keys")?;
+
+            axum_server::bind_rustls(addr, tls_config)
+                .handle(shutdown_handle)
+                .serve(app)
+                .await
+                .context("Failed to start TLS server")?;
+        } else {
+            info!("Server listening on {}", &addr);
+
+            axum_server::bind(addr)
+                .handle(shutdown_handle)
+                .serve(app)
+                .await
+                .context("Failed to start server")?;
+        }
+    }
+
+    #[cfg(not(feature = "tls"))]
+    {
         info!("Server listening on {}", &addr);
 
         axum_server::bind(addr)

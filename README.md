@@ -27,8 +27,11 @@ device.
 git clone https://github.com/szaffarano/korrosync.git
 cd korrosync
 
-# Build with cargo
+# Build with cargo (without TLS)
 cargo build --release
+
+# Or build with TLS support
+cargo build --release --features tls
 
 # Run the server
 ./target/release/korrosync
@@ -90,6 +93,27 @@ docker run -d \
   --name korrosync \
   korrosync
 ```
+
+## Features
+
+Korrosync supports optional features that can be enabled at compile time:
+
+### `tls`
+
+Enables native TLS/HTTPS support using [rustls](https://github.com/rustls/rustls). When enabled, the server can accept HTTPS connections directly without requiring a reverse proxy.
+
+**Building with TLS support:**
+
+```bash
+cargo build --release --features tls
+```
+
+**What it enables:**
+- Direct HTTPS support via rustls
+- TLS configuration options (`KORROSYNC_USE_TLS`, `KORROSYNC_CERT_PATH`, `KORROSYNC_KEY_PATH`)
+- Native certificate and key file handling
+
+**Note:** If the `tls` feature is not enabled during compilation, the server will only support HTTP. You can still use HTTPS by placing the server behind a reverse proxy like Nginx (see Deployment section).
 
 ## Configuration
 

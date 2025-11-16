@@ -9,6 +9,8 @@
 //!
 //! ## Server Configuration
 //! - `KORROSYNC_SERVER_ADDRESS` - Server bind address (default: `0.0.0.0:3000`)
+//!
+//! ### TLS Configuration (when `tls` feature is enabled)
 //! - `KORROSYNC_USE_TLS` - Enable TLS/HTTPS support (default: `false`)
 //!   - Accepts: `true`, `1`, `yes`, `on` (case-insensitive)
 //!   - Rejects: `false`, `0`, `no`, `off` (case-insensitive)
@@ -21,7 +23,9 @@ use serde::{Deserialize, Serialize};
 
 const DEFAULT_DB_PATH: &str = "data/db.redb";
 const DEFAULT_SERVER_ADDRESS: &str = "0.0.0.0:3000";
+#[cfg(feature = "tls")]
 const DEFAULT_TLS_CERT: &str = "tls/cert.pem";
+#[cfg(feature = "tls")]
 const DEFAULT_TLS_PRIVKEY: &str = "tls/key.pem";
 
 /// Main configuration structure for Korrosync
@@ -42,19 +46,23 @@ pub struct Db {
     pub path: String,
 }
 
-/// Server configuration including TLS settings
+/// Server configuration
+#[cfg_attr(feature = "tls", doc = "including TLS settings")]
 #[derive(Serialize, Deserialize)]
 pub struct Server {
     /// Server bind address (e.g., "0.0.0.0:3000")
     pub address: String,
     /// Path to TLS certificate file in PEM format
+    #[cfg(feature = "tls")]
     pub cert_path: String,
     /// Path to TLS private key file in PEM format
+    #[cfg(feature = "tls")]
     pub key_path: String,
     /// Whether to enable TLS/HTTPS
     ///
     /// When `true`, the server will use TLS with the configured certificate and key.
     /// Supports multiple boolean representations: true/1/yes/on or false/0/no/off (case-insensitive)
+    #[cfg(feature = "tls")]
     pub use_tls: bool,
 }
 
@@ -78,9 +86,14 @@ impl Server {
     pub fn from_env() -> Self {
         let address =
             env::var("KORROSYNC_SERVER_ADDRESS").unwrap_or(DEFAULT_SERVER_ADDRESS.to_string());
+
+        #[cfg(feature = "tls")]
         let cert_path = env::var("KORROSYNC_CERT_PATH").unwrap_or(DEFAULT_TLS_CERT.to_string());
+        #[cfg(feature = "tls")]
         let key_path = env::var("KORROSYNC_KEY_PATH").unwrap_or(DEFAULT_TLS_PRIVKEY.to_string());
+        #[cfg(feature = "tls")]
         let use_tls_str = env::var("KORROSYNC_USE_TLS").unwrap_or("false".to_string());
+        #[cfg(feature = "tls")]
         let use_tls = match use_tls_str.to_lowercase().as_str() {
             "true" | "1" | "yes" | "on" => true,
             "false" | "0" | "no" | "off" => false,
@@ -89,10 +102,14 @@ impl Server {
                 use_tls_str
             ),
         };
+
         Self {
             address,
+            #[cfg(feature = "tls")]
             cert_path,
+            #[cfg(feature = "tls")]
             key_path,
+            #[cfg(feature = "tls")]
             use_tls,
         }
     }
