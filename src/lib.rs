@@ -49,8 +49,11 @@
 //! # Configuration
 //!
 //! The server can be configured via environment variables:
-//! - `KORROSYNC_SERVER_ADDR` - Server bind address (default: 0.0.0.0:3000)
+//! - `KORROSYNC_SERVER_ADDRESS` - Server bind address (default: 0.0.0.0:3000)
 //! - `KORROSYNC_DB_PATH` - Database file path (default: data/db.redb)
+//! - `KORROSYNC_USE_TLS` - Enable TLS/HTTPS (default: false, accepts: true/1/yes/on or false/0/no/off)
+//! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
+//! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
 //!
 //! # KOReader Compatibility
 //!
@@ -61,12 +64,13 @@
 //!
 //! Configure your KOReader device to point to your server URL to start syncing.
 
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
-use color_eyre::eyre;
-use tokio::{net::TcpListener, signal};
+use axum_server::{Handle, tls_rustls::RustlsConfig};
+use color_eyre::eyre::{self, Context};
+use tokio::{signal, time::sleep};
 use tokio_util::sync::CancellationToken;
-use tracing::info;
+use tracing::{info, instrument};
 
 use crate::{
     api::{middleware::ratelimiter::rate_limiter_layer, router::app, state::AppState},
@@ -82,12 +86,19 @@ pub mod logging;
 pub mod model;
 pub mod service;
 
+const SHUTDOWN_DURATION_SECS: u64 = 30;
+
 pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     init_logging();
 
-    let listener = TcpListener::bind(cfg.server.address).await?;
+    let addr: SocketAddr = cfg
+        .server
+        .address
+        .parse()
+        .context("Error parsing binding address")?;
+
     let state = AppState {
-        sync: Arc::new(KorrosyncServiceRedb::new(cfg.db.path)?),
+        sync: Arc::new(KorrosyncServiceRedb::new(cfg.db.path).context("DB Init Error")?),
     };
 
     let shutdown_token_cleanup = CancellationToken::new();
@@ -97,10 +108,33 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
         .layer(rate_limiter)
         .into_make_service_with_connect_info::<SocketAddr>();
 
-    info!("Server listening on {}", &listener.local_addr()?);
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    let shutdown_handle = Handle::new();
+    tokio::spawn(shutdown_signal(shutdown_handle.clone()));
+
+    if cfg.server.use_tls {
+        info!("TLS Server listening on {}", &addr);
+
+        let tls_config = RustlsConfig::from_pem_file(
+            PathBuf::from(cfg.server.cert_path),
+            PathBuf::from(cfg.server.key_path),
+        )
+        .await
+        .context("Error loading TLS keys")?;
+
+        axum_server::bind_rustls(addr, tls_config)
+            .handle(shutdown_handle)
+            .serve(app)
+            .await
+            .context("Failed to start TLS server")?;
+    } else {
+        info!("Server listening on {}", &addr);
+
+        axum_server::bind(addr)
+            .handle(shutdown_handle)
+            .serve(app)
+            .await
+            .context("Failed to start server")?;
+    }
 
     // Cancel the rate limiter cleanup task and wait for it to finish
     shutdown_token_cleanup.cancel();
@@ -115,7 +149,12 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
 }
 
 /// Handle graceful shutdown signals
-async fn shutdown_signal() {
+///
+/// A background task is spawned to listen for shutdown signals (Ctrl-C, SIGINT, SIGTERM).
+/// Then call the handle's `graceful_shutdown` method to initiate a graceful shutdown of the
+/// server.
+#[instrument(fields(graceful_shutdown), skip(handle))]
+async fn shutdown_signal(handle: Handle) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -145,8 +184,27 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = interrupt => {},
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        _ = interrupt => info!("Got SIGINT"),
+        _ = ctrl_c => info!("Got Ctrl-C"),
+        _ = terminate => info!("Got SIGTERM"),
+    }
+
+    info!("Server is shutting down...");
+
+    handle.graceful_shutdown(Some(Duration::from_secs(SHUTDOWN_DURATION_SECS)));
+
+    for remaining in (1..=SHUTDOWN_DURATION_SECS).rev() {
+        sleep(Duration::from_secs(1)).await;
+
+        let connections = handle.connection_count();
+        tracing::info!("{connections} live connections left ({remaining}s left)");
+
+        if connections == 0 {
+            break;
+        }
+
+        if remaining == 1 {
+            tracing::warn!("Forcing shutdown with live connections");
+        }
     }
 }

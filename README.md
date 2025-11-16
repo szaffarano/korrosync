@@ -1,5 +1,6 @@
 # Korrosync
 
+<!-- markdownlint-disable-next-line no-inline-html -->
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -69,11 +70,23 @@ docker buildx build \
   -t korrosync:arm32 \
   --load .
 
-# Run container
+# Run container (HTTP)
 docker run -d \
   -p 3000:3000 \
   -v $(pwd)/data:/data \
   -e KORROSYNC_DB_PATH=/data/db.redb \
+  --name korrosync \
+  korrosync
+
+# Run container with TLS enabled
+docker run -d \
+  -p 3000:3000 \
+  -v $(pwd)/data:/data \
+  -v $(pwd)/tls:/tls \
+  -e KORROSYNC_DB_PATH=/data/db.redb \
+  -e KORROSYNC_USE_TLS=true \
+  -e KORROSYNC_CERT_PATH=/tls/cert.pem \
+  -e KORROSYNC_KEY_PATH=/tls/key.pem \
   --name korrosync \
   korrosync
 ```
@@ -86,12 +99,24 @@ Korrosync is configured through environment variables:
 |----------|-------------|---------|
 | `KORROSYNC_DB_PATH` | Path to the redb database file | `data/db.redb` |
 | `KORROSYNC_SERVER_ADDRESS` | Server bind address | `0.0.0.0:3000` |
+| `KORROSYNC_USE_TLS` | Enable TLS/HTTPS support (true/1/yes/on or false/0/no/off, case-insensitive) | `false` |
+| `KORROSYNC_CERT_PATH` | Path to TLS certificate file (PEM format) | `tls/cert.pem` |
+| `KORROSYNC_KEY_PATH` | Path to TLS private key file (PEM format) | `tls/key.pem` |
 
 ### Example
 
 ```bash
+# Basic configuration
 export KORROSYNC_DB_PATH=/var/lib/korrosync/db.redb
 export KORROSYNC_SERVER_ADDRESS=127.0.0.1:8080
+korrosync
+
+# With TLS enabled
+export KORROSYNC_DB_PATH=/var/lib/korrosync/db.redb
+export KORROSYNC_SERVER_ADDRESS=0.0.0.0:3000
+export KORROSYNC_USE_TLS=true
+export KORROSYNC_CERT_PATH=/etc/korrosync/tls/cert.pem
+export KORROSYNC_KEY_PATH=/etc/korrosync/tls/key.pem
 korrosync
 ```
 
@@ -133,6 +158,10 @@ User=korrosync
 Group=korrosync
 Environment="KORROSYNC_DB_PATH=/var/lib/korrosync/db.redb"
 Environment="KORROSYNC_SERVER_ADDRESS=0.0.0.0:3000"
+# Uncomment to enable TLS
+#Environment="KORROSYNC_USE_TLS=true"
+#Environment="KORROSYNC_CERT_PATH=/etc/korrosync/tls/cert.pem"
+#Environment="KORROSYNC_KEY_PATH=/etc/korrosync/tls/key.pem"
 ExecStart=/usr/local/bin/korrosync
 Restart=on-failure
 RestartSec=5s
@@ -156,9 +185,25 @@ sudo systemctl start korrosync
 sudo systemctl status korrosync
 ```
 
+### Native TLS Support
+
+Korrosync supports built-in TLS/HTTPS without requiring a reverse proxy:
+
+```bash
+# Enable TLS with environment variables
+export KORROSYNC_USE_TLS=true
+export KORROSYNC_CERT_PATH=/etc/korrosync/tls/cert.pem
+export KORROSYNC_KEY_PATH=/etc/korrosync/tls/key.pem
+korrosync
+```
+
+**Note:** Certificate and private key files must be in PEM format. For production, use certificates from a trusted CA
+(e.g., Let's Encrypt). For testing, self-signed certificates are provided in the `tls/` directory. See `tls/README.md`
+for more information.
+
 ### Reverse Proxy (Nginx)
 
-For production deployments, use a reverse proxy with TLS:
+Alternatively, use a reverse proxy with TLS termination:
 
 ```nginx
 server {
@@ -226,7 +271,7 @@ The following features and improvements are planned:
 
 ### Infrastructure
 
-- [ ] TLS/HTTPS configuration support
+- [x] TLS/HTTPS configuration support
 - [ ] Configurable rate limiting via environment variables
 - [ ] Metrics and observability (Prometheus/OpenTelemetry)
 - [ ] Structured logging with log levels
