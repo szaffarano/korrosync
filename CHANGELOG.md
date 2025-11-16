@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/szaffarano/korrosync/compare/v0.1.3...v0.1.4) - 2025-11-16
+
+### Added
+
+- *(docker)* Publish on release
+
+### Fixed
+
+- *(docker)* Update tag resolution
+
+### Other
+
+- *(deps)* update docker/login-action digest to 28fdb31 ([#37](https://github.com/szaffarano/korrosync/pull/37))
+- *(deps)* update docker/build-push-action digest to 9e436ba ([#36](https://github.com/szaffarano/korrosync/pull/36))
+- *(deps)* update docker/metadata-action digest to 8d8c7c1 ([#40](https://github.com/szaffarano/korrosync/pull/40))
+- *(ci)* Cleanup workflow definition ([#39](https://github.com/szaffarano/korrosync/pull/39))
+
 ## [0.1.3](https://github.com/szaffarano/korrosync/compare/v0.1.2...v0.1.3) - 2025-11-16
 
 ### Added
