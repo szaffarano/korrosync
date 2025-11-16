@@ -51,6 +51,8 @@
 //! The server can be configured via environment variables:
 //! - `KORROSYNC_SERVER_ADDRESS` - Server bind address (default: 0.0.0.0:3000)
 //! - `KORROSYNC_DB_PATH` - Database file path (default: data/db.redb)
+//!
+//! When the `tls` feature is enabled:
 //! - `KORROSYNC_USE_TLS` - Enable TLS/HTTPS (default: false, accepts: true/1/yes/on or false/0/no/off)
 //! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
 //! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
@@ -64,9 +66,13 @@
 //!
 //! Configure your KOReader device to point to your server URL to start syncing.
 
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+#[cfg(feature = "tls")]
+use std::path::PathBuf;
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use axum_server::{Handle, tls_openssl::OpenSSLConfig};
+use axum_server::Handle;
+#[cfg(feature = "tls")]
+use axum_server::tls_rustls::RustlsConfig;
 use color_eyre::eyre::{self, Context};
 use tokio::{signal, time::sleep};
 use tokio_util::sync::CancellationToken;
@@ -111,21 +117,36 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     let shutdown_handle = Handle::new();
     tokio::spawn(shutdown_signal(shutdown_handle.clone()));
 
-    if cfg.server.use_tls {
-        info!("TLS Server listening on {}", &addr);
+    #[cfg(feature = "tls")]
+    {
+        if cfg.server.use_tls {
+            info!("TLS Server listening on {}", &addr);
 
-        let tls_config = OpenSSLConfig::from_pem_file(
-            PathBuf::from(cfg.server.cert_path),
-            PathBuf::from(cfg.server.key_path),
-        )
-        .context("Error loading TLS keys")?;
-
-        axum_server::bind_openssl(addr, tls_config)
-            .handle(shutdown_handle)
-            .serve(app)
+            let tls_config = RustlsConfig::from_pem_file(
+                PathBuf::from(cfg.server.cert_path),
+                PathBuf::from(cfg.server.key_path),
+            )
             .await
-            .context("Failed to start TLS server")?;
-    } else {
+            .context("Error loading TLS keys")?;
+
+            axum_server::bind_rustls(addr, tls_config)
+                .handle(shutdown_handle)
+                .serve(app)
+                .await
+                .context("Failed to start TLS server")?;
+        } else {
+            info!("Server listening on {}", &addr);
+
+            axum_server::bind(addr)
+                .handle(shutdown_handle)
+                .serve(app)
+                .await
+                .context("Failed to start server")?;
+        }
+    }
+
+    #[cfg(not(feature = "tls"))]
+    {
         info!("Server listening on {}", &addr);
 
         axum_server::bind(addr)
