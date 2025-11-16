@@ -10,6 +10,8 @@ SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 # cross-compilation dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
     curl \
     xz-utils \
     --no-install-recommends \

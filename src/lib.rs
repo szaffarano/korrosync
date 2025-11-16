@@ -66,7 +66,7 @@
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
-use axum_server::{Handle, tls_rustls::RustlsConfig};
+use axum_server::{Handle, tls_openssl::OpenSSLConfig};
 use color_eyre::eyre::{self, Context};
 use tokio::{signal, time::sleep};
 use tokio_util::sync::CancellationToken;
@@ -114,14 +114,13 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     if cfg.server.use_tls {
         info!("TLS Server listening on {}", &addr);
 
-        let tls_config = RustlsConfig::from_pem_file(
+        let tls_config = OpenSSLConfig::from_pem_file(
             PathBuf::from(cfg.server.cert_path),
             PathBuf::from(cfg.server.key_path),
         )
-        .await
         .context("Error loading TLS keys")?;
 
-        axum_server::bind_rustls(addr, tls_config)
+        axum_server::bind_openssl(addr, tls_config)
             .handle(shutdown_handle)
             .serve(app)
             .await
