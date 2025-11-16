@@ -95,7 +95,6 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
         .parse()
         .context("Error parsing binding address")?;
 
-    // let listener = TcpListener::bind(cfg.server.address).await?;
     let state = AppState {
         sync: Arc::new(KorrosyncServiceRedb::new(cfg.db.path).context("DB Init Error")?),
     };
@@ -107,7 +106,6 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
         .layer(rate_limiter)
         .into_make_service_with_connect_info::<SocketAddr>();
 
-    // Spawn a task to gracefully shutdown the server
     let shutdown_handle = Handle::new();
     tokio::spawn(shutdown_signal(shutdown_handle.clone()));
 
@@ -125,7 +123,7 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
             .handle(shutdown_handle)
             .serve(app)
             .await
-            .context("INIT - failed to start server with TLS")?
+            .context("Failed to start TLS server")?;
     } else {
         info!("Server listening on {}", &addr);
 
@@ -133,7 +131,7 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
             .handle(shutdown_handle)
             .serve(app)
             .await
-            .expect("INIT - failed to start server");
+            .context("Failed to start server")?;
     }
 
     // Cancel the rate limiter cleanup task and wait for it to finish
@@ -150,7 +148,7 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
 
 /// Handle graceful shutdown signals
 ///
-/// A background task is spanned to listen for shutdown signals (Ctrl-C, SIGINT, SIGTERM).
+/// A background task is spawned to listen for shutdown signals (Ctrl-C, SIGINT, SIGTERM).
 /// Then call the handle's `graceful_shutdown` method to initiate a graceful shutdown of the
 /// server.
 #[instrument(fields(graceful_shutdown), skip(handle))]
@@ -193,11 +191,20 @@ async fn shutdown_signal(handle: Handle) {
 
     handle.graceful_shutdown(Some(Duration::from_secs(30)));
 
+    // 1 min
+    let mut retries = 60;
     loop {
+        retries -= 1;
+        if retries == 0 {
+            tracing::warn!("Forcing shutdown with live connections");
+            break;
+        }
+
         sleep(Duration::from_secs(1)).await;
-        tracing::info!(
-            "{connections} live connections left",
-            connections = handle.connection_count()
-        );
+        let connections = handle.connection_count();
+        tracing::info!("{connections} live connections left");
+        if connections == 0 {
+            break;
+        }
     }
 }

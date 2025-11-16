@@ -84,11 +84,14 @@ impl Server {
         let key_path = env::var("KORROSYNC_KEY_PATH")
             .map(|v| v.to_string())
             .unwrap_or(DEFAULT_TLS_PRIVKEY.to_string());
-        let use_tls = env::var("KORROSYNC_USE_TLS").unwrap_or("false".to_string());
-        let use_tls = match use_tls.to_lowercase().as_str() {
+        let use_tls_str = env::var("KORROSYNC_USE_TLS").unwrap_or("false".to_string());
+        let use_tls = match use_tls_str.to_lowercase().as_str() {
             "true" | "1" | "yes" | "on" => true,
             "false" | "0" | "no" | "off" => false,
-            _ => panic!("Invalid boolean value"),
+            _ => panic!(
+                "Invalid boolean value for KORROSYNC_USE_TLS: '{}'. Expected: true/1/yes/on or false/0/no/off",
+                use_tls_str
+            ),
         };
         Self {
             address,
