@@ -51,7 +51,7 @@ Pre-built binaries for Linux and macOS are available in the
 
 ### Docker
 
-Docker images are uploaded in [Docker Hub](https://hub.docker.com/repository/docker/szaffarano/korrosync/tags).
+Docker images are uploaded in [Docker Hub](https://hub.docker.com/r/szaffarano/korrosync/tags).
 
 If you want to build the image yourself, use the following instructions.
 
