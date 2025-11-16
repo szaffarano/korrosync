@@ -234,19 +234,19 @@ The following features and improvements are planned:
 
 ### Deployment & Distribution
 
-- [ ] Automated binary releases for multiple platforms
-- [ ] Official Docker images on Docker Hub
+- [x] Automated binary releases for multiple platforms
+- [x] Official Docker images on Docker Hub
 - [ ] Helm chart for Kubernetes deployment
 - [ ] NixOS module for declarative configuration
 
 ### Documentation
 
-- [ ] API documentation
+- [x] API documentation
 - [ ] Deployment guides
 
 ### Testing & Quality
 
-- [ ] Increase test coverage to >80%
+- [x] Increase test coverage to >80%
 - [ ] Improve logging and error handling
 
 ## License
