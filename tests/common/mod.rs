@@ -1,19 +1,22 @@
 #![allow(dead_code)]
 
+use std::sync::Arc;
+
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Method, Request};
 use korrosync::api::{router::app, state::AppState};
 use korrosync::model::User;
-use korrosync::sync::service::KorrosyncService;
+use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
 use tempfile::NamedTempFile;
 
 /// Creates a test application with a single test user (username: "test", password: "test")
 pub(crate) fn spawn_app() -> Router {
     let db_path = NamedTempFile::new().expect("Creating temp file");
-    let sync = KorrosyncService::new(db_path).expect("Failed to create KorrosyncService");
+    let sync =
+        Arc::new(KorrosyncServiceRedb::new(db_path).expect("Failed to create KorrosyncService"));
 
-    sync.add_user(&User::new("test", "test").expect("Error instantiating test user"))
+    sync.create_or_update_user(User::new("test", "test").expect("Error instantiating test user"))
         .expect("Error inserting user");
 
     app(AppState { sync })
@@ -22,11 +25,14 @@ pub(crate) fn spawn_app() -> Router {
 /// Creates a test application with multiple users
 pub(crate) fn spawn_app_with_users(users: Vec<(&str, &str)>) -> Router {
     let db_path = NamedTempFile::new().expect("Creating temp file");
-    let sync = KorrosyncService::new(db_path).expect("Failed to create KorrosyncService");
+    let sync =
+        Arc::new(KorrosyncServiceRedb::new(db_path).expect("Failed to create KorrosyncService"));
 
     for (username, password) in users {
-        sync.add_user(&User::new(username, password).expect("Error instantiating test user"))
-            .expect("Error inserting user");
+        sync.create_or_update_user(
+            User::new(username, password).expect("Error instantiating test user"),
+        )
+        .expect("Error inserting user");
     }
 
     app(AppState { sync })
@@ -35,7 +41,8 @@ pub(crate) fn spawn_app_with_users(users: Vec<(&str, &str)>) -> Router {
 /// Creates a test application without any users
 pub(crate) fn spawn_app_empty() -> Router {
     let db_path = NamedTempFile::new().expect("Creating temp file");
-    let sync = KorrosyncService::new(db_path).expect("Failed to create KorrosyncService");
+    let sync =
+        Arc::new(KorrosyncServiceRedb::new(db_path).expect("Failed to create KorrosyncService"));
 
     app(AppState { sync })
 }
