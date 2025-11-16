@@ -1,3 +1,9 @@
+//! Error types for the model layer.
+//!
+//! This module defines error types that can occur during model operations,
+//! such as user creation, password hashing, or validation failures.
+//!
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]

@@ -1,3 +1,66 @@
+//! Korrosync - KOReader synchronization server
+//!
+//! A Rust implementation of a synchronization server compatible with KOReader's sync
+//! functionality. This server provides a self-hosted alternative for synchronizing reading
+//! progress across multiple KOReader devices.
+//!
+//! # Architecture
+//!
+//! The crate is organized into three main layers:
+//!
+//! ## Model Layer ([`model`])
+//!
+//! Domain models representing the core business entities:
+//! - [`model::User`] - User authentication and profile management
+//! - [`model::Progress`] - Reading progress tracking for documents
+//! - [`model::Error`] - Model-specific errors
+//!
+//! ## Service Layer ([`service`])
+//!
+//! Business logic and data persistence:
+//! - [`service::db`] - Database abstraction with trait-based design
+//! - [`service::db::KorrosyncServiceRedb`] - Default redb implementation
+//! - [`service::error`] - Service-level error types
+//!
+//! ## API Layer ([`api`])
+//!
+//! HTTP API compatible with KOReader sync protocol:
+//! - RESTful endpoints for user registration and authentication
+//! - Progress synchronization endpoints
+//! - Rate limiting and authentication middleware
+//!
+//! # Quick Start
+//!
+//! ```no_run
+//! use korrosync::{config::Config, run_server};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // Load configuration from environment or defaults
+//!     let config = Config::from_env();
+//!
+//!     // Start the server
+//!     run_server(config).await?;
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Configuration
+//!
+//! The server can be configured via environment variables:
+//! - `KORROSYNC_SERVER_ADDR` - Server bind address (default: 0.0.0.0:3000)
+//! - `KORROSYNC_DB_PATH` - Database file path (default: data/db.redb)
+//!
+//! # KOReader Compatibility
+//!
+//! This server implements the KOReader synchronization API, allowing you to:
+//! - Register user accounts
+//! - Authenticate devices
+//! - Synchronize reading progress across devices
+//!
+//! Configure your KOReader device to point to your server URL to start syncing.
+
 use std::{net::SocketAddr, sync::Arc};
 
 use color_eyre::eyre;

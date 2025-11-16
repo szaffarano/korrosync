@@ -16,7 +16,7 @@ pub(crate) fn spawn_app() -> Router {
     let sync =
         Arc::new(KorrosyncServiceRedb::new(db_path).expect("Failed to create KorrosyncService"));
 
-    sync.create_or_update_user(&User::new("test", "test").expect("Error instantiating test user"))
+    sync.create_or_update_user(User::new("test", "test").expect("Error instantiating test user"))
         .expect("Error inserting user");
 
     app(AppState { sync })
@@ -30,7 +30,7 @@ pub(crate) fn spawn_app_with_users(users: Vec<(&str, &str)>) -> Router {
 
     for (username, password) in users {
         sync.create_or_update_user(
-            &User::new(username, password).expect("Error instantiating test user"),
+            User::new(username, password).expect("Error instantiating test user"),
         )
         .expect("Error inserting user");
     }

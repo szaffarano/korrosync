@@ -25,7 +25,7 @@ async fn register(
     }
 
     state.sync.create_or_update_user(
-        &User::new(&payload.username, &payload.password).map_err(ApiError::runtime)?,
+        User::new(&payload.username, &payload.password).map_err(ApiError::runtime)?,
     )?;
 
     Ok((

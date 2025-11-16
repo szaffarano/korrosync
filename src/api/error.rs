@@ -1,3 +1,59 @@
+//! Error handling for the API layer.
+//!
+//! This module defines error types for HTTP API operations and implements conversion
+//! from lower-level errors (model, service) to HTTP responses with appropriate status
+//! codes and error payloads.
+//!
+//! # Error Types
+//!
+//! The [`ApiError`] enum represents all possible error conditions in the API layer:
+//!
+//! - **Path/JSON Rejection**: Invalid request parameters or malformed JSON
+//! - **Service Errors**: Database or I/O failures from the service layer
+//! - **Not Found**: Resource not found (404)
+//! - **Invalid Input**: Validation failures (e.g., empty username/password)
+//! - **Existing User**: Attempting to create a duplicate user (409 Conflict)
+//! - **Unauthorized**: Authentication failures (401)
+//! - **Runtime**: Unexpected errors
+//!
+//! # HTTP Status Code Mapping
+//!
+//! Errors are automatically converted to HTTP responses with appropriate status codes:
+//!
+//! | Error Type | HTTP Status |
+//! |-----------|-------------|
+//! | PathRejection | 400 Bad Request |
+//! | JsonRejection | 422 Unprocessable Entity |
+//! | Service | 500 Internal Server Error |
+//! | NotFound | 404 Not Found |
+//! | InvalidInput | 400 Bad Request |
+//! | ExistingUser | 409 Conflict |
+//! | Unauthorized | 401 Unauthorized |
+//! | Runtime | 500 Internal Server Error |
+//!
+//! # Error Response Format
+//!
+//! All errors return a consistent JSON payload:
+//!
+//! ```json
+//! {
+//!   "code": "ERROR_CODE",
+//!   "message": "Human-readable error message"
+//! }
+//! ```
+//!
+//! # Example
+//!
+//! ```no_run
+//! use korrosync::api::error::ApiError;
+//!
+//! // Errors are automatically converted to HTTP responses
+//! fn example_handler() -> Result<(), ApiError> {
+//!     // This will become a 400 Bad Request response
+//!     return Err(ApiError::InvalidInput("Username cannot be empty".to_string()));
+//! }
+//! ```
+
 use axum::{
     Json,
     extract::rejection::{JsonRejection, PathRejection},

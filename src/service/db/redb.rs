@@ -1,26 +1,20 @@
-//! Database service layer for KoReader synchronization.
+//! Redb-based implementation of KOReader synchronization service.
 //!
-//! This module provides the [`KorrosyncService`] which manages persistent storage
-//! for user authentication and reading progress synchronization using an embedded
-//! redb database.
+//! This module provides a [`KorrosyncService`] implementation using the embedded
+//! redb database for persistent storage of user authentication and reading progress.
 //!
 //! # Database Schema
 //!
-//! The service maintains two tables:
+//! The implementation maintains two tables:
 //!
 //! - **users-v1**: Stores user credentials with username as key and [`User`] as value
 //! - **progress-v1**: Stores reading progress with composite key (document, user) and [`Progress`] as value
 //!
-//! # Thread Safety
-//!
-//! The service is thread-safe and can be cloned cheaply (uses `Arc<Database>` internally).
-//! Multiple clones can safely operate on the same database concurrently.
-//!
 //! # Example
 //!
 //! ```no_run
-//! use korrosync::service::db::{KorrosyncServiceRedb, KorrosyncService, Progress};
-//! use korrosync::model::User;
+//! use korrosync::service::db::{KorrosyncServiceRedb, KorrosyncService};
+//! use korrosync::model::{User, Progress};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // Initialize the service with a database file
@@ -28,7 +22,7 @@
 //!
 //! // Add a user
 //! let user = User::new("alice", "password")?;
-//! service.create_or_update_user(&user)?;
+//! service.create_or_update_user(user)?;
 //!
 //! // Update reading progress
 //! let progress = Progress {
@@ -49,8 +43,8 @@ use std::{fs::create_dir_all, path::Path};
 use redb::{Database, ReadableDatabase, TableDefinition};
 
 use crate::{
-    model::User,
-    service::{error::ServiceError, serialization::Bincode},
+    model::{Progress, User},
+    service::{db::KorrosyncService, error::ServiceError, serialization::Bincode},
 };
 
 // Table definitions with versioning for future migration support
@@ -59,30 +53,13 @@ const USERS_TABLE: TableDefinition<&str, Bincode<User>> = TableDefinition::new("
 const PROGRESS_TABLE: TableDefinition<Bincode<ProgressKey>, Bincode<Progress>> =
     TableDefinition::new("progress-v1");
 
-/// Main service for managing KOReader synchronization data.
+/// Redb-based implementation of KoReader synchronization service.
 ///
 /// This service provides a high-level API for user authentication and reading progress
-/// synchronization. It wraps an embedded redb database and provides transactional
-/// guarantees for all operations.
+/// synchronization using an embedded redb database with transactional guarantees.
 ///
 pub struct KorrosyncServiceRedb {
     db: Database,
-}
-
-pub trait KorrosyncService {
-    fn get_user(&self, name: String) -> Result<Option<User>, ServiceError>;
-    fn create_or_update_user(&self, user: &User) -> Result<(), ServiceError>;
-    fn update_progress(
-        &self,
-        user: String,
-        document: String,
-        progress: Progress,
-    ) -> Result<(String, u64), ServiceError>;
-    fn get_progress(
-        &self,
-        user: String,
-        document: String,
-    ) -> Result<Option<Progress>, ServiceError>;
 }
 
 /// Composite key for the progress table.
@@ -95,43 +72,8 @@ struct ProgressKey {
     user: String,
 }
 
-/// Reading progress information for a document.
-///
-/// This struct contains all the information about a user's reading progress
-/// in a specific document, including device information and the current position.
-///
-/// # Fields
-///
-/// * `device_id` - Unique identifier for the device reporting progress
-/// * `device` - Human-readable device name (e.g., "Kindle", "Kobo")
-/// * `percentage` - Reading progress as a percentage (0.0 - 100.0)
-/// * `progress` - Textual representation of progress (e.g., page number, chapter)
-/// * `timestamp` - Unix timestamp in milliseconds when progress was last updated
-///
-/// # Example
-///
-/// ```
-/// use korrosync::service::db::Progress;
-///
-/// let progress = Progress {
-///     device_id: "device-123".to_string(),
-///     device: "Kindle Paperwhite".to_string(),
-///     percentage: 67.5,
-///     progress: "Page 135 of 200".to_string(),
-///     timestamp: 1609459200000,
-/// };
-/// ```
-#[derive(Debug, Encode, Decode, Default, Clone)]
-pub struct Progress {
-    pub device_id: String,
-    pub device: String,
-    pub percentage: f32,
-    pub progress: String,
-    pub timestamp: u64,
-}
-
 impl KorrosyncServiceRedb {
-    /// Creates a new KorrosyncService with a database at the specified path.
+    /// Creates a new KorrosyncServiceRedb with a database at the specified path.
     ///
     /// This method initializes the embedded redb database and creates the required
     /// tables if they don't already exist. If the database file already exists,
@@ -146,7 +88,7 @@ impl KorrosyncServiceRedb {
     ///
     /// # Returns
     ///
-    /// Returns a new `KorrosyncService` instance ready for use.
+    /// Returns a new `KorrosyncServiceRedb` instance ready for use.
     ///
     /// # Errors
     ///
@@ -159,14 +101,11 @@ impl KorrosyncServiceRedb {
     /// # Examples
     ///
     /// ```no_run
-    /// use korrosync::service::db::KorrosyncService;
     /// use korrosync::service::db::KorrosyncServiceRedb;
     ///
     /// // Create a service with a simple database file
     /// let service = KorrosyncServiceRedb::new("korrosync.db")?;
     ///
-    /// // Create a service with nested directories (will be created automatically)
-    /// let service = KorrosyncServiceRedb::new("data/databases/korrosync.db")?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn new(path: impl AsRef<Path>) -> Result<KorrosyncServiceRedb, ServiceError> {
@@ -198,9 +137,6 @@ impl KorrosyncServiceRedb {
 impl KorrosyncService for KorrosyncServiceRedb {
     /// Retrieves a user by username from the database.
     ///
-    /// This method performs a read-only transaction to fetch the user.
-    /// Multiple concurrent reads are allowed and won't block each other.
-    ///
     /// # Arguments
     ///
     /// * `name` - The username to look up
@@ -210,18 +146,10 @@ impl KorrosyncService for KorrosyncServiceRedb {
     /// - `Ok(Some(user))` - User found with the given username
     /// - `Ok(None)` - No user exists with the given username
     ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The database cannot be accessed
-    /// - The table cannot be opened
-    /// - Data corruption is detected
-    ///
     /// # Example
     ///
     /// ```no_run
-    /// use korrosync::service::db::KorrosyncService;
-    /// use korrosync::service::db::KorrosyncServiceRedb;
+    /// use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
     ///
     /// let service = KorrosyncServiceRedb::new("korrosync.db")?;
     ///
@@ -245,54 +173,36 @@ impl KorrosyncService for KorrosyncServiceRedb {
 
     /// Adds a new user or updates an existing user in the database.
     ///
-    /// This method performs a write transaction to insert or update the user.
-    /// If a user with the same username already exists, they will be overwritten.
-    /// The transaction is atomic and will be rolled back if any error occurs.
-    ///
     /// # Arguments
     ///
     /// * `user` - Reference to the user to add or update
     ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The database cannot be accessed
-    /// - The write transaction fails
-    /// - There's insufficient disk space
-    /// - Serialization of the user fails
-    ///
     /// # Example
     ///
     /// ```no_run
-    /// use korrosync::service::db::KorrosyncService;
-    /// use korrosync::service::db::KorrosyncServiceRedb;
+    /// use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
     /// use korrosync::model::User;
     ///
     /// let service = KorrosyncServiceRedb::new("korrosync.db")?;
     /// let user = User::new("alice", "secure_password")?;
     ///
-    /// service.create_or_update_user(&user)?;
+    /// service.create_or_update_user(user)?;
     /// println!("User added successfully");
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    ///
-    /// # Transaction Behavior
-    ///
-    /// This operation is transactional. If an error occurs after the insert
-    /// but before commit, the entire transaction will be rolled back.
-    fn create_or_update_user(&self, user: &User) -> Result<(), ServiceError> {
+    fn create_or_update_user(&self, user: User) -> Result<User, ServiceError> {
         let write_txn = self.db.begin_write().map_err(ServiceError::db)?;
         {
             let mut table = write_txn
                 .open_table(USERS_TABLE)
                 .map_err(ServiceError::db)?;
             table
-                .insert(user.username(), user)
+                .insert(user.username(), &user)
                 .map_err(ServiceError::db)?;
         }
         write_txn.commit().map_err(ServiceError::db)?;
 
-        Ok(())
+        Ok(user)
     }
 
     /// Updates or creates reading progress for a user's document.
@@ -313,18 +223,11 @@ impl KorrosyncService for KorrosyncServiceRedb {
     /// - The document identifier (echoed back)
     /// - The timestamp from the progress record
     ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The database cannot be accessed
-    /// - The write transaction fails
-    /// - Serialization of the progress data fails
-    /// - There's insufficient disk space
-    ///
     /// # Example
     ///
     /// ```no_run
-    /// use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb, Progress};
+    /// use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
+    /// use korrosync::model::Progress;
     ///
     /// let service = KorrosyncServiceRedb::new("korrosync.db")?;
     ///
@@ -340,11 +243,6 @@ impl KorrosyncService for KorrosyncServiceRedb {
     /// println!("Updated progress for {} at timestamp {}", doc, ts);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    ///
-    /// # Transaction Behavior
-    ///
-    /// This operation is transactional. The progress will only be committed if
-    /// the entire operation succeeds. If an error occurs, no changes will be made.
     fn update_progress(
         &self,
         user: String,
@@ -367,9 +265,6 @@ impl KorrosyncService for KorrosyncServiceRedb {
 
     /// Retrieves reading progress for a specific user and document.
     ///
-    /// This method performs a read-only transaction to fetch the progress information.
-    /// Multiple concurrent reads are allowed and won't block each other.
-    ///
     /// # Arguments
     ///
     /// * `user` - The username of the user
@@ -379,19 +274,10 @@ impl KorrosyncService for KorrosyncServiceRedb {
     ///
     /// Returns the `Progress` information if found.
     ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The database cannot be accessed
-    /// - No progress exists for the given user/document combination ([`Error::NotFound`])
-    /// - Data corruption is detected
-    /// - Deserialization fails
-    ///
     /// # Example
     ///
     /// ```no_run
-    /// use korrosync::service::db::KorrosyncService;
-    /// use korrosync::service::db::KorrosyncServiceRedb;
+    /// use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
     ///
     /// let service = KorrosyncServiceRedb::new("korrosync.db")?;
     ///
@@ -490,7 +376,7 @@ mod tests {
             let service = KorrosyncServiceRedb::new(&db_path).expect("Failed to create service");
             let user = create_test_user("alice");
             service
-                .create_or_update_user(&user)
+                .create_or_update_user(user)
                 .expect("Failed to add user");
         }
 
@@ -512,7 +398,7 @@ mod tests {
         let user = create_test_user("alice");
 
         service
-            .create_or_update_user(&user)
+            .create_or_update_user(user)
             .expect("Failed to add user");
 
         let retrieved = service
@@ -541,10 +427,10 @@ mod tests {
         let user2 = User::new("alice", "password2").expect("Failed to create user2");
 
         service
-            .create_or_update_user(&user1)
+            .create_or_update_user(user1)
             .expect("Failed to add user1");
         service
-            .create_or_update_user(&user2)
+            .create_or_update_user(user2)
             .expect("Failed to add user2");
 
         let retrieved = service
@@ -573,7 +459,7 @@ mod tests {
         let user = create_test_user("alice");
 
         service
-            .create_or_update_user(&user)
+            .create_or_update_user(user)
             .expect("Failed to add user");
 
         let retrieved = service
@@ -594,7 +480,7 @@ mod tests {
         let user = create_test_user("Alice");
 
         service
-            .create_or_update_user(&user)
+            .create_or_update_user(user)
             .expect("Failed to add user");
 
         let result = service
@@ -814,7 +700,7 @@ mod tests {
         let service = Arc::new(svc);
         let user = create_test_user("alice");
         service
-            .create_or_update_user(&user)
+            .create_or_update_user(user)
             .expect("Failed to add user");
 
         let service_clone = service.clone();
@@ -838,7 +724,7 @@ mod tests {
         let service = Arc::new(svc);
         let user = create_test_user("alice");
         service
-            .create_or_update_user(&user)
+            .create_or_update_user(user)
             .expect("Failed to add user");
 
         let mut handles = vec![];
@@ -878,7 +764,7 @@ mod tests {
             let handle = tokio::spawn(async move {
                 let user = User::new(&username, "password").expect("Failed to create user");
                 service
-                    .create_or_update_user(&user)
+                    .create_or_update_user(user)
                     .expect("Failed to add user");
                 username
             });

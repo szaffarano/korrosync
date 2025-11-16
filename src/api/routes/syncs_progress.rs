@@ -11,7 +11,7 @@ use tracing::{debug, info};
 
 use crate::{
     api::{error::ApiError, middleware::auth::AuthenticatedUser, state::AppState},
-    service::db::Progress,
+    model::Progress,
 };
 
 /// Create the syncs progress routes

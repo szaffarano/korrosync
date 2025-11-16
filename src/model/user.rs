@@ -39,26 +39,18 @@ use crate::model::error::Error;
 /// and tracks user activity timestamps. All password operations are performed
 /// using constant-time comparisons to prevent timing attacks.
 ///
-/// # Fields
-///
-/// * `username` - The unique identifier for the user
-/// * `password_hash` - Argon2 hash of the user's password (never stores plaintext)
-/// * `last_activity` - Optional timestamp (in milliseconds since Unix epoch) of last user activity
-///
 /// # Security Considerations
 ///
 /// - Passwords are hashed using Argon2 with randomly generated salts
 /// - Password verification uses constant-time comparison
 /// - Implements serialization/deserialization via bincode for storage
-///
-/// # Thread Safety
-///
-/// This struct is `Send` and `Sync` by default, as it only contains thread-safe fields.
-/// Argon2 operations are performed in methods and do not affect thread safety.
 #[derive(Debug, Encode, Decode, Default)]
 pub struct User {
+    /// The unique identifier for the user
     username: String,
+    /// Hash of the user's password (never stored plaintext)
     password_hash: String,
+    /// Optional timestamp (in milliseconds since Unix epoch) of last user activity
     last_activity: Option<i64>,
 }
 
@@ -76,12 +68,6 @@ impl User {
     /// # Returns
     ///
     /// Returns a new `User` instance with the hashed password and no activity recorded.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - Password hashing fails (extremely rare, typically indicates system issues)
-    /// - Random number generation for salt fails
     ///
     /// # Example
     ///
@@ -138,7 +124,6 @@ impl User {
     /// Verifies if the given plain password matches the stored password hash.
     ///
     /// This method uses constant-time comparison to prevent timing attacks.
-    /// The verification is performed using Argon2's built-in verification function.
     ///
     /// # Arguments
     ///
@@ -146,14 +131,7 @@ impl User {
     ///
     /// # Returns
     ///
-    /// Returns `Ok(())` if the password matches, or an error if verification fails.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The stored password hash is malformed or corrupted
-    /// - The provided password does not match the stored hash
-    /// - Password verification encounters a system error
+    /// Returns `Ok(true)` A bool indicates whether the password matches, or an error if verification fails.
     ///
     /// # Example
     ///
@@ -170,10 +148,6 @@ impl User {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     ///
-    /// # Security
-    ///
-    /// This method is designed to be resistant to timing attacks through the use
-    /// of constant-time comparison operations provided by the Argon2 implementation.
     pub fn check(&self, password: impl AsRef<str>) -> Result<bool, Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash).map_err(Error::runtime)?;
         let argon2 = Argon2::default();

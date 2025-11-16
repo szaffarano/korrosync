@@ -32,7 +32,7 @@ pub async fn auth(
             }
 
             user.touch();
-            state.sync.create_or_update_user(&user)?;
+            let user = state.sync.create_or_update_user(user)?;
 
             let user = AuthenticatedUser(username.to_string(), user.last_activity());
             request.extensions_mut().insert(user);
