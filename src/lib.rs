@@ -57,6 +57,29 @@
 //! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
 //! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
 //!
+//! # Features
+//!
+//! This crate supports the following optional cargo features:
+//!
+//! ## `tls`
+//!
+//! Enables native TLS/HTTPS support using `rustls` via `axum-server`. When enabled, the server
+//! can accept HTTPS connections directly without requiring a reverse proxy.
+//!
+//! **Compile-time enablement:**
+//! ```bash
+//! cargo build --release --features tls
+//! ```
+//!
+//! **What it provides:**
+//! - Direct HTTPS support using the rustls TLS implementation
+//! - TLS configuration fields in [`config::Server`]
+//! - Runtime TLS enable/disable via `KORROSYNC_USE_TLS` environment variable
+//! - Certificate and private key file handling
+//!
+//! **Note:** Without this feature, the server only supports HTTP. You can still use HTTPS
+//! by deploying behind a reverse proxy like Nginx or Caddy.
+//!
 //! # KOReader Compatibility
 //!
 //! This server implements the KOReader synchronization API, allowing you to:
