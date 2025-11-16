@@ -49,8 +49,11 @@
 //! # Configuration
 //!
 //! The server can be configured via environment variables:
-//! - `KORROSYNC_SERVER_ADDR` - Server bind address (default: 0.0.0.0:3000)
+//! - `KORROSYNC_SERVER_ADDRESS` - Server bind address (default: 0.0.0.0:3000)
 //! - `KORROSYNC_DB_PATH` - Database file path (default: data/db.redb)
+//! - `KORROSYNC_USE_TLS` - Enable TLS/HTTPS (default: false, accepts: true/1/yes/on or false/0/no/off)
+//! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
+//! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
 //!
 //! # KOReader Compatibility
 //!
