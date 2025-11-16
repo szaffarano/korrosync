@@ -578,7 +578,7 @@ mod tests {
 
         assert!(
             result.is_ok(),
-            "Should return error for non-existent progress"
+            "Should return Ok(None) for non-existent progress"
         );
         match result {
             Ok(None) => {} // Expected

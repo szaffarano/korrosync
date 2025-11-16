@@ -27,7 +27,7 @@
 //! | Service | 500 Internal Server Error |
 //! | NotFound | 404 Not Found |
 //! | InvalidInput | 400 Bad Request |
-//! | ExistingUser | 409 Conflict |
+//! | ExistingUser | 402 Payment Required (keeps KOReader return code (?)) |
 //! | Unauthorized | 401 Unauthorized |
 //! | Runtime | 500 Internal Server Error |
 //!
@@ -127,7 +127,7 @@ impl IntoResponse for ApiError {
                 },
             ),
             ApiError::JsonRejection(ref e) => (
-                StatusCode::BAD_REQUEST,
+                StatusCode::UNPROCESSABLE_ENTITY,
                 ApiErrorPayload {
                     code: "bad_request",
                     message: e.to_string(),
