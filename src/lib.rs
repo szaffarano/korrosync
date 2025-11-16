@@ -86,6 +86,8 @@ pub mod logging;
 pub mod model;
 pub mod service;
 
+const SHUTDOWN_DURATION_SECS: u64 = 30;
+
 pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     init_logging();
 
@@ -189,22 +191,20 @@ async fn shutdown_signal(handle: Handle) {
 
     info!("Server is shutting down...");
 
-    handle.graceful_shutdown(Some(Duration::from_secs(30)));
+    handle.graceful_shutdown(Some(Duration::from_secs(SHUTDOWN_DURATION_SECS)));
 
-    // 1 min
-    let mut retries = 60;
-    loop {
-        retries -= 1;
-        if retries == 0 {
-            tracing::warn!("Forcing shutdown with live connections");
+    for remaining in (1..=SHUTDOWN_DURATION_SECS).rev() {
+        sleep(Duration::from_secs(1)).await;
+
+        let connections = handle.connection_count();
+        tracing::info!("{connections} live connections left ({remaining}s left)");
+
+        if connections == 0 {
             break;
         }
 
-        sleep(Duration::from_secs(1)).await;
-        let connections = handle.connection_count();
-        tracing::info!("{connections} live connections left");
-        if connections == 0 {
-            break;
+        if remaining == 1 {
+            tracing::warn!("Forcing shutdown with live connections");
         }
     }
 }

@@ -78,12 +78,8 @@ impl Server {
     pub fn from_env() -> Self {
         let address =
             env::var("KORROSYNC_SERVER_ADDRESS").unwrap_or(DEFAULT_SERVER_ADDRESS.to_string());
-        let cert_path = env::var("KORROSYNC_CERT_PATH")
-            .map(|v| v.to_string())
-            .unwrap_or(DEFAULT_TLS_CERT.to_string());
-        let key_path = env::var("KORROSYNC_KEY_PATH")
-            .map(|v| v.to_string())
-            .unwrap_or(DEFAULT_TLS_PRIVKEY.to_string());
+        let cert_path = env::var("KORROSYNC_CERT_PATH").unwrap_or(DEFAULT_TLS_CERT.to_string());
+        let key_path = env::var("KORROSYNC_KEY_PATH").unwrap_or(DEFAULT_TLS_PRIVKEY.to_string());
         let use_tls_str = env::var("KORROSYNC_USE_TLS").unwrap_or("false".to_string());
         let use_tls = match use_tls_str.to_lowercase().as_str() {
             "true" | "1" | "yes" | "on" => true,

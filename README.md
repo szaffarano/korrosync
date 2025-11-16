@@ -99,7 +99,7 @@ Korrosync is configured through environment variables:
 |----------|-------------|---------|
 | `KORROSYNC_DB_PATH` | Path to the redb database file | `data/db.redb` |
 | `KORROSYNC_SERVER_ADDRESS` | Server bind address | `0.0.0.0:3000` |
-| `KORROSYNC_USE_TLS` | Enable TLS/HTTPS support (true/1/yes/on or false/0/no/off) | `false` |
+| `KORROSYNC_USE_TLS` | Enable TLS/HTTPS support (true/1/yes/on or false/0/no/off, case-insensitive) | `false` |
 | `KORROSYNC_CERT_PATH` | Path to TLS certificate file (PEM format) | `tls/cert.pem` |
 | `KORROSYNC_KEY_PATH` | Path to TLS private key file (PEM format) | `tls/key.pem` |
 
