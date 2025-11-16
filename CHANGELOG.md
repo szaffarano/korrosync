@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/szaffarano/korrosync/compare/v0.1.2...v0.1.3) - 2025-11-16
+
+### Added
+
+- *(refactor)* Improve error handling ([#35](https://github.com/szaffarano/korrosync/pull/35))
+
 ## [0.1.2](https://github.com/szaffarano/korrosync/compare/v0.1.1...v0.1.2) - 2025-11-14
 
 ### Added
