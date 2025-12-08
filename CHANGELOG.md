@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/szaffarano/korrosync/compare/v0.1.5...v0.1.6) - 2025-12-08
+
+### Fixed
+
+- *(deps)* update rust crate axum-server to 0.8.0 ([#51](https://github.com/szaffarano/korrosync/pull/51))
+
+### Other
+
+- *(deps)* update rust crate uuid to v1.19.0 ([#50](https://github.com/szaffarano/korrosync/pull/50))
+- *(deps)* update docker/metadata-action digest to c299e40 ([#49](https://github.com/szaffarano/korrosync/pull/49))
+- *(deps)* update tokio-tracing monorepo ([#47](https://github.com/szaffarano/korrosync/pull/47))
+- *(deps)* update actions/checkout action to v6 ([#45](https://github.com/szaffarano/korrosync/pull/45))
+
 ## [0.1.5](https://github.com/szaffarano/korrosync/compare/v0.1.4...v0.1.5) - 2025-11-16
 
 ### Added
