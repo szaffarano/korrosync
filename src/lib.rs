@@ -93,9 +93,9 @@
 use std::path::PathBuf;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use axum_server::Handle;
 #[cfg(feature = "tls")]
 use axum_server::tls_rustls::RustlsConfig;
+use axum_server::{Address, Handle};
 use color_eyre::eyre::{self, Context};
 use tokio::{signal, time::sleep};
 use tokio_util::sync::CancellationToken;
@@ -197,7 +197,7 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
 /// Then call the handle's `graceful_shutdown` method to initiate a graceful shutdown of the
 /// server.
 #[instrument(fields(graceful_shutdown), skip(handle))]
-async fn shutdown_signal(handle: Handle) {
+async fn shutdown_signal<A: Address>(handle: Handle<A>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
