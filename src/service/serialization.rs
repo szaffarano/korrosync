@@ -25,7 +25,7 @@ where
         Self: 'a;
 
     type AsBytes<'a>
-        = Vec<u8>
+        = AlignedVec
     where
         Self: 'a;
 
@@ -54,9 +54,7 @@ where
         Self: 'a,
         Self: 'b,
     {
-        rkyv::to_bytes::<Error>(value)
-            .map(|v| v.to_vec())
-            .unwrap_or_default()
+        rkyv::to_bytes::<Error>(value).unwrap_or_else(|_| AlignedVec::new())
     }
 
     fn type_name() -> TypeName {
