@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/szaffarano/korrosync/compare/v0.2.0...v0.2.1) - 2026-01-09
+
+### Other
+
+- Bump target versions ([#71](https://github.com/szaffarano/korrosync/pull/71))
+
 ## [0.2.0](https://github.com/szaffarano/korrosync/compare/v0.1.5...v0.2.0) - 2026-01-09
 
 ### Fixed
