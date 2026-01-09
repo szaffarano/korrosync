@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/szaffarano/korrosync/compare/v0.1.5...v0.2.0) - 2026-01-09
+
+### Fixed
+
+- *(deps)* update rust crate axum-server to 0.8.0 ([#51](https://github.com/szaffarano/korrosync/pull/51))
+
+### Other
+
+- *(deps)* update rust crate tempfile to v3.24.0 ([#68](https://github.com/szaffarano/korrosync/pull/68))
+- *(deps)* update rust crate serial_test to v3.3.1 ([#67](https://github.com/szaffarano/korrosync/pull/67))
+- *(deps)* update rust crate tokio to v1.49.0 ([#69](https://github.com/szaffarano/korrosync/pull/69))
+- *(deps)* update rust crate tokio-util to v0.7.18 ([#66](https://github.com/szaffarano/korrosync/pull/66))
+- *(config)* migrate config renovate.json ([#70](https://github.com/szaffarano/korrosync/pull/70))
+- *(deps)* update docker/metadata-action digest to ed95091 ([#65](https://github.com/szaffarano/korrosync/pull/65))
+- *(deps)* update rust crate tracing to v0.1.44 ([#58](https://github.com/szaffarano/korrosync/pull/58))
+- *(deps)* update rust crate reqwest to 0.13.0 ([#62](https://github.com/szaffarano/korrosync/pull/62))
+- *(deps)* update rust crate tower-http to v0.6.8 ([#52](https://github.com/szaffarano/korrosync/pull/52))
+- *(deps)* update rust crate governor to v0.10.4 ([#56](https://github.com/szaffarano/korrosync/pull/56))
+- *(deps)* update rust crate serde_json to v1.0.149 ([#61](https://github.com/szaffarano/korrosync/pull/61))
+- *(deps)* update axum monorepo ([#60](https://github.com/szaffarano/korrosync/pull/60))
+- *(deps)* update docker/build-push-action digest to 64c9b14 ([#64](https://github.com/szaffarano/korrosync/pull/64))
+- *(deps)* update actions/cache action to v5 ([#54](https://github.com/szaffarano/korrosync/pull/54))
+- *(deps)* update docker/login-action digest to 916386b ([#59](https://github.com/szaffarano/korrosync/pull/59))
+- *(deps)* update actions/upload-artifact action to v6 ([#55](https://github.com/szaffarano/korrosync/pull/55))
+- migrate from bincode to rkyv for serialization ([#63](https://github.com/szaffarano/korrosync/pull/63))
+- *(deps)* update rust crate uuid to v1.19.0 ([#50](https://github.com/szaffarano/korrosync/pull/50))
+- *(deps)* update docker/metadata-action digest to c299e40 ([#49](https://github.com/szaffarano/korrosync/pull/49))
+- *(deps)* update tokio-tracing monorepo ([#47](https://github.com/szaffarano/korrosync/pull/47))
+- *(deps)* update actions/checkout action to v6 ([#45](https://github.com/szaffarano/korrosync/pull/45))
+
 ## [0.1.5](https://github.com/szaffarano/korrosync/compare/v0.1.4...v0.1.5) - 2025-11-16
 
 ### Added
