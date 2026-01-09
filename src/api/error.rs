@@ -62,7 +62,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::error;
 
 use crate::{model, service::error::ServiceError};
 

@@ -1,14 +1,25 @@
-use bincode::{Decode, Encode, decode_from_slice, encode_to_vec};
+use rkyv::{
+    Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize,
+    api::high::{HighDeserializer, HighSerializer, access},
+    deserialize,
+    rancor::Error,
+    ser::allocator::ArenaHandle,
+    util::AlignedVec,
+};
 
 use redb::{Key, TypeName, Value};
 use std::{any::type_name, cmp::Ordering};
 
 #[derive(Debug)]
-pub(crate) struct Bincode<T>(T);
+pub(crate) struct Rkyv<T>(T);
 
-impl<T> Value for Bincode<T>
+impl<T> Value for Rkyv<T>
 where
-    T: std::fmt::Debug + Default + Encode + Decode<()>,
+    T: std::fmt::Debug + Default + Archive,
+    T::Archived: RkyvDeserialize<T, HighDeserializer<Error>>
+        + rkyv::Portable
+        + for<'a> rkyv::bytecheck::CheckBytes<rkyv::api::high::HighValidator<'a, Error>>,
+    for<'a> T: RkyvSerialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
 {
     type SelfType<'a>
         = T
@@ -16,7 +27,7 @@ where
         Self: 'a;
 
     type AsBytes<'a>
-        = Vec<u8>
+        = AlignedVec
     where
         Self: 'a;
 
@@ -28,9 +39,23 @@ where
     where
         Self: 'a,
     {
-        decode_from_slice(data, bincode::config::standard())
-            .map(|v| v.0)
-            .unwrap_or_default()
+        if data.is_empty() {
+            return T::default();
+        }
+
+        match access::<T::Archived, Error>(data) {
+            Ok(archived) => deserialize::<T, Error>(archived).unwrap_or_else(|e| {
+                tracing::warn!("Failed to deserialize data: {}, using default value", e);
+                T::default()
+            }),
+            Err(e) => {
+                tracing::warn!(
+                    "Bytecheck validation failed: {}. Data may be corrupted, using default value",
+                    e
+                );
+                T::default()
+            }
+        }
     }
 
     fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
@@ -38,17 +63,28 @@ where
         Self: 'a,
         Self: 'b,
     {
-        encode_to_vec(value, bincode::config::standard()).unwrap_or_default()
+        rkyv::to_bytes::<Error>(value).unwrap_or_else(|e| {
+            tracing::warn!(
+                "Failed to serialize value of type {}: {}. Returning empty AlignedVec",
+                type_name::<T>(),
+                e
+            );
+            AlignedVec::new()
+        })
     }
 
     fn type_name() -> TypeName {
-        TypeName::new(&format!("Bincode<{}>", type_name::<T>()))
+        TypeName::new(&format!("Rkyv<{}>", type_name::<T>()))
     }
 }
 
-impl<T> Key for Bincode<T>
+impl<T> Key for Rkyv<T>
 where
-    T: std::fmt::Debug + Decode<()> + Default + Encode + Ord,
+    T: std::fmt::Debug + Default + Archive + Ord,
+    T::Archived: RkyvDeserialize<T, HighDeserializer<Error>>
+        + rkyv::Portable
+        + for<'a> rkyv::bytecheck::CheckBytes<rkyv::api::high::HighValidator<'a, Error>>,
+    for<'a> T: RkyvSerialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>,
 {
     fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
         Self::from_bytes(data1).cmp(&Self::from_bytes(data2))

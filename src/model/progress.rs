@@ -4,7 +4,7 @@
 //! and metadata for a specific document. Progress is synchronized across devices and
 //! includes information about the device, position, and timestamp.
 
-use bincode::{Decode, Encode};
+use rkyv::{Archive, Deserialize, Serialize};
 
 /// Reading progress information for a document.
 ///
@@ -24,7 +24,7 @@ use bincode::{Decode, Encode};
 ///     timestamp: 1609459200000,
 /// };
 /// ```
-#[derive(Debug, Encode, Decode, Default, Clone)]
+#[derive(Debug, Archive, Serialize, Deserialize, Default, Clone)]
 pub struct Progress {
     /// Unique identifier for the device reporting progress
     pub device_id: String,
