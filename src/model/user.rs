@@ -28,8 +28,8 @@ use argon2::{
         self, PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
     },
 };
-use bincode::{Decode, Encode};
 use chrono::Utc;
+use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::model::error::Error;
 
@@ -43,8 +43,8 @@ use crate::model::error::Error;
 ///
 /// - Passwords are hashed using Argon2 with randomly generated salts
 /// - Password verification uses constant-time comparison
-/// - Implements serialization/deserialization via bincode for storage
-#[derive(Debug, Encode, Decode, Default)]
+/// - Implements serialization/deserialization via rkyv for storage
+#[derive(Debug, Archive, Serialize, Deserialize, Default)]
 pub struct User {
     /// The unique identifier for the user
     username: String,

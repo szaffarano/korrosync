@@ -7,8 +7,8 @@
 //!
 //! The implementation maintains two tables:
 //!
-//! - **users-v1**: Stores user credentials with username as key and [`User`] as value
-//! - **progress-v1**: Stores reading progress with composite key (document, user) and [`Progress`] as value
+//! - **users-v2**: Stores user credentials with username as key and [`User`] as value
+//! - **progress-v2**: Stores reading progress with composite key (document, user) and [`Progress`] as value
 //!
 //! # Example
 //!
@@ -37,21 +37,21 @@
 //! # }
 //! ```
 
-use bincode::{Decode, Encode};
+use rkyv::{Archive, Deserialize, Serialize};
 use std::{fs::create_dir_all, path::Path};
 
 use redb::{Database, ReadableDatabase, TableDefinition};
 
 use crate::{
     model::{Progress, User},
-    service::{db::KorrosyncService, error::ServiceError, serialization::Bincode},
+    service::{db::KorrosyncService, error::ServiceError, serialization::Rkyv},
 };
 
 // Table definitions with versioning for future migration support
 // TODO: implement migrations for table definitions. So far we don't need it but it could be useful in the future
-const USERS_TABLE: TableDefinition<&str, Bincode<User>> = TableDefinition::new("users-v1");
-const PROGRESS_TABLE: TableDefinition<Bincode<ProgressKey>, Bincode<Progress>> =
-    TableDefinition::new("progress-v1");
+const USERS_TABLE: TableDefinition<&str, Rkyv<User>> = TableDefinition::new("users-v2");
+const PROGRESS_TABLE: TableDefinition<Rkyv<ProgressKey>, Rkyv<Progress>> =
+    TableDefinition::new("progress-v2");
 
 /// Redb-based implementation of KoReader synchronization service.
 ///
@@ -66,7 +66,7 @@ pub struct KorrosyncServiceRedb {
 ///
 /// Combines document identifier and username to uniquely identify
 /// a user's progress in a specific document.
-#[derive(Debug, Decode, Encode, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Archive, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
 struct ProgressKey {
     document: String,
     user: String,
