@@ -6,8 +6,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "Dockerfile"
+      "managerFilePatterns": [
+        "/Dockerfile/"
       ],
       "matchStrings": [
         "ZIG_VERSION=\"?(?<currentValue>[^\"\\s]+)\"?"
