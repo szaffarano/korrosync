@@ -63,7 +63,14 @@ where
         Self: 'a,
         Self: 'b,
     {
-        rkyv::to_bytes::<Error>(value).unwrap_or_else(|_| AlignedVec::new())
+        rkyv::to_bytes::<Error>(value).unwrap_or_else(|e| {
+            tracing::warn!(
+                "Failed to serialize value of type {}: {}. Returning empty AlignedVec",
+                type_name::<T>(),
+                e
+            );
+            AlignedVec::new()
+        })
     }
 
     fn type_name() -> TypeName {
