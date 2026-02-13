@@ -40,7 +40,7 @@ async fn main() -> eyre::Result<()> {
                     if users.is_empty() {
                         println!("No users found");
                     } else {
-                        println!("{:<20} {}", "USERNAME", "LAST ACTIVITY");
+                        println!("{:<20} LAST ACTIVITY", "USERNAME");
                         println!("{}", "-".repeat(40));
                         for user in &users {
                             let activity = user
