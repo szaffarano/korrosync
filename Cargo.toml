@@ -23,6 +23,7 @@ name = "korrosync"
 [dependencies]
 argon2 = { version = "0.5.3", features = ["std"] }
 axum = { version = "0.8.6", features = ["http2", "macros", "multipart"] }
+clap = { version = "4", features = ["derive"] }
 axum-extra = { version = "0.12.1", features = ["with-rejection"] }
 axum-server = "0.8.0"
 rkyv = { version = "0.8", features = ["alloc", "bytecheck", "unaligned"] }
