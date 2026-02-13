@@ -32,6 +32,7 @@ async fn cli_should_start_server() {
         )],
         async {
             let _cmd = tokio::process::Command::new(cmd.get_program())
+                .arg("serve")
                 .kill_on_drop(true)
                 .spawn();
             assert_server().await;

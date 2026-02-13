@@ -40,7 +40,7 @@
 use rkyv::{Archive, Deserialize, Serialize};
 use std::{fs::create_dir_all, path::Path};
 
-use redb::{Database, ReadableDatabase, TableDefinition};
+use redb::{Database, ReadableDatabase, ReadableTable, TableDefinition};
 
 use crate::{
     model::{Progress, User},
@@ -308,6 +308,30 @@ impl KorrosyncService for KorrosyncServiceRedb {
         } else {
             Ok(None)
         }
+    }
+
+    fn list_users(&self) -> Result<Vec<User>, ServiceError> {
+        let read_txn = self.db.begin_read().map_err(ServiceError::db)?;
+        let table = read_txn.open_table(USERS_TABLE).map_err(ServiceError::db)?;
+
+        let mut users = Vec::new();
+        for entry in table.iter().map_err(ServiceError::db)? {
+            let (_key, value) = entry.map_err(ServiceError::db)?;
+            users.push(value.value());
+        }
+        Ok(users)
+    }
+
+    fn delete_user(&self, name: String) -> Result<bool, ServiceError> {
+        let write_txn = self.db.begin_write().map_err(ServiceError::db)?;
+        let existed = {
+            let mut table = write_txn
+                .open_table(USERS_TABLE)
+                .map_err(ServiceError::db)?;
+            table.remove(&*name).map_err(ServiceError::db)?.is_some()
+        };
+        write_txn.commit().map_err(ServiceError::db)?;
+        Ok(existed)
     }
 }
 
@@ -886,6 +910,67 @@ mod tests {
 
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().device_id, "device-123");
+    }
+
+    // === List Users Tests ===
+
+    #[test]
+    fn test_list_users_empty() {
+        let (_temp, service) = create_test_service();
+        let users = service.list_users().expect("Failed to list users");
+        assert!(users.is_empty());
+    }
+
+    #[test]
+    fn test_list_users_returns_all() {
+        let (_temp, service) = create_test_service();
+
+        service
+            .create_or_update_user(create_test_user("alice"))
+            .expect("Failed to add alice");
+        service
+            .create_or_update_user(create_test_user("bob"))
+            .expect("Failed to add bob");
+        service
+            .create_or_update_user(create_test_user("charlie"))
+            .expect("Failed to add charlie");
+
+        let users = service.list_users().expect("Failed to list users");
+        assert_eq!(users.len(), 3);
+
+        let mut usernames: Vec<&str> = users.iter().map(|u| u.username()).collect();
+        usernames.sort();
+        assert_eq!(usernames, vec!["alice", "bob", "charlie"]);
+    }
+
+    // === Delete User Tests ===
+
+    #[test]
+    fn test_delete_user_existing() {
+        let (_temp, service) = create_test_service();
+        service
+            .create_or_update_user(create_test_user("alice"))
+            .expect("Failed to add user");
+
+        let deleted = service
+            .delete_user("alice".into())
+            .expect("Failed to delete user");
+        assert!(deleted, "Should return true for existing user");
+
+        let user = service
+            .get_user("alice".into())
+            .expect("Failed to get user");
+        assert!(user.is_none(), "User should no longer exist");
+    }
+
+    #[test]
+    fn test_delete_user_nonexistent() {
+        let (_temp, service) = create_test_service();
+
+        let deleted = service
+            .delete_user("nonexistent".into())
+            .expect("Failed to delete user");
+        assert!(!deleted, "Should return false for non-existent user");
     }
 
     #[test]

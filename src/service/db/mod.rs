@@ -104,4 +104,25 @@ pub trait KorrosyncService {
         user: String,
         document: String,
     ) -> Result<Option<Progress>, ServiceError>;
+
+    /// Lists all users in the database.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(Vec<User>)` - All users currently stored
+    /// - `Err(...)` - Unexpected database error occurred
+    fn list_users(&self) -> Result<Vec<User>, ServiceError>;
+
+    /// Deletes a user by username.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The username to delete
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(true)` - User existed and was deleted
+    /// - `Ok(false)` - No user with that username existed
+    /// - `Err(...)` - Unexpected database error occurred
+    fn delete_user(&self, name: String) -> Result<bool, ServiceError>;
 }
