@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/szaffarano/korrosync/compare/v0.2.0...v0.2.1) - 2026-02-13
+
+### Other
+
+- *(deps)* update rust crate tempfile to v3.25.0 ([#84](https://github.com/szaffarano/korrosync/pull/84))
+- *(deps)* update rust crate tower to v0.5.3 ([#75](https://github.com/szaffarano/korrosync/pull/75))
+- *(deps)* update rust crate rkyv to v0.8.15 ([#77](https://github.com/szaffarano/korrosync/pull/77))
+- *(deps)* update rust crate reqwest to v0.13.2 ([#83](https://github.com/szaffarano/korrosync/pull/83))
+- Bump bytes crate ([#85](https://github.com/szaffarano/korrosync/pull/85))
+- *(deps)* update docker/metadata-action digest to a60f0f6 ([#82](https://github.com/szaffarano/korrosync/pull/82))
+- *(deps)* update docker/build-push-action digest to 10e90e3 ([#81](https://github.com/szaffarano/korrosync/pull/81))
+- *(deps)* update rust crate uuid to v1.20.0 ([#80](https://github.com/szaffarano/korrosync/pull/80))
+- *(deps)* update rust crate thiserror to v2.0.18 ([#79](https://github.com/szaffarano/korrosync/pull/79))
+- *(deps)* update rust crate chrono to v0.4.43 ([#78](https://github.com/szaffarano/korrosync/pull/78))
+- *(deps)* update docker/login-action digest to 3227f53 ([#76](https://github.com/szaffarano/korrosync/pull/76))
+- *(deps)* update rust crate tokio-retry2 to 0.9.0 ([#74](https://github.com/szaffarano/korrosync/pull/74))
+- *(deps)* update rust crate assert_cmd to v2.1.2 ([#73](https://github.com/szaffarano/korrosync/pull/73))
+- Bump target versions ([#71](https://github.com/szaffarano/korrosync/pull/71))
+
 ## [0.2.0](https://github.com/szaffarano/korrosync/compare/v0.1.5...v0.2.0) - 2026-01-09
 
 ### Fixed
