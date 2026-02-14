@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/szaffarano/korrosync/compare/v0.3.0...v0.4.0) - 2026-02-14
+
+### Added
+
+- make rate limiting configurable via environment variables ([#91](https://github.com/szaffarano/korrosync/pull/91))
+
+### Other
+
+- Add agents.md ([#90](https://github.com/szaffarano/korrosync/pull/90))
+
 ## [0.3.0](https://github.com/szaffarano/korrosync/compare/v0.2.1...v0.3.0) - 2026-02-13
 
 ### Added
