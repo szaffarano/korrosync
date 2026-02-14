@@ -14,7 +14,7 @@ cargo build                              # Debug build
 cargo build --release --features tls     # Release build with TLS support
 cargo test                               # All tests (unit + integration)
 cargo test --lib                         # Unit tests only
-cargo test --test '*'                    # Integration tests only
+cargo test --tests                        # Integration tests only
 cargo test <test_name>                   # Single test by name
 cargo fmt --check                        # Check formatting
 cargo clippy -- -D warnings              # Lint (warnings are errors in CI)
