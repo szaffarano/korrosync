@@ -3,8 +3,22 @@ name: Rust CI
 on:
   pull_request:
     branches: [master]
+    paths:
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "flake.lock"
+      - "flake.nix"
+      - ".github/workflows/ci.yml"
+      - "**/*.rs"
   push:
     branches: [master]
+    paths:
+      - "Cargo.lock"
+      - "Cargo.toml"
+      - "flake.lock"
+      - "flake.nix"
+      - ".github/workflows/ci.yml"
+      - "**/*.rs"
 
 env:
   CARGO_TERM_COLOR: always
