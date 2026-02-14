@@ -16,6 +16,10 @@
 //!   - Rejects: `false`, `0`, `no`, `off` (case-insensitive)
 //! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: `tls/cert.pem`)
 //! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: `tls/key.pem`)
+//!
+//! ## Rate Limiting
+//! - `KORROSYNC_RATE_LIMIT_PER_SECOND` - Rate limit replenishment rate per second (default: `2`)
+//! - `KORROSYNC_RATE_LIMIT_BURST_SIZE` - Maximum burst size before rate limiting (default: `5`)
 
 use std::env;
 
@@ -27,6 +31,8 @@ const DEFAULT_SERVER_ADDRESS: &str = "0.0.0.0:3000";
 const DEFAULT_TLS_CERT: &str = "tls/cert.pem";
 #[cfg(feature = "tls")]
 const DEFAULT_TLS_PRIVKEY: &str = "tls/key.pem";
+const DEFAULT_RATE_LIMIT_PER_SECOND: u64 = 2;
+const DEFAULT_RATE_LIMIT_BURST_SIZE: u32 = 5;
 
 /// Main configuration structure for Korrosync
 ///
@@ -37,6 +43,8 @@ pub struct Config {
     pub db: Db,
     /// Server configuration including TLS settings
     pub server: Server,
+    /// Rate limiting configuration
+    pub rate_limit: RateLimit,
 }
 
 /// Database configuration
@@ -71,6 +79,7 @@ impl Config {
         Self {
             db: Db::from_env(),
             server: Server::from_env(),
+            rate_limit: RateLimit::from_env(),
         }
     }
 }
@@ -112,5 +121,128 @@ impl Server {
             #[cfg(feature = "tls")]
             use_tls,
         }
+    }
+}
+
+/// Rate limiting configuration
+#[derive(Serialize, Deserialize)]
+pub struct RateLimit {
+    /// Replenishment rate in requests per second
+    pub per_second: u64,
+    /// Maximum burst size before rate limiting kicks in
+    pub burst_size: u32,
+}
+
+impl RateLimit {
+    pub fn from_env() -> Self {
+        let per_second = env::var("KORROSYNC_RATE_LIMIT_PER_SECOND")
+            .map(|v| {
+                v.parse::<u64>().unwrap_or_else(|_| {
+                    panic!(
+                        "Invalid value for KORROSYNC_RATE_LIMIT_PER_SECOND: '{}'. Expected a positive integer",
+                        v
+                    )
+                })
+            })
+            .unwrap_or(DEFAULT_RATE_LIMIT_PER_SECOND);
+
+        assert!(
+            per_second > 0,
+            "KORROSYNC_RATE_LIMIT_PER_SECOND must be greater than 0"
+        );
+
+        let burst_size = env::var("KORROSYNC_RATE_LIMIT_BURST_SIZE")
+            .map(|v| {
+                v.parse::<u32>().unwrap_or_else(|_| {
+                    panic!(
+                        "Invalid value for KORROSYNC_RATE_LIMIT_BURST_SIZE: '{}'. Expected a positive integer",
+                        v
+                    )
+                })
+            })
+            .unwrap_or(DEFAULT_RATE_LIMIT_BURST_SIZE);
+
+        assert!(
+            burst_size > 0,
+            "KORROSYNC_RATE_LIMIT_BURST_SIZE must be greater than 0"
+        );
+
+        Self {
+            per_second,
+            burst_size,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rate_limit_defaults() {
+        temp_env::with_vars_unset(
+            vec![
+                "KORROSYNC_RATE_LIMIT_PER_SECOND",
+                "KORROSYNC_RATE_LIMIT_BURST_SIZE",
+            ],
+            || {
+                let rate_limit = RateLimit::from_env();
+                assert_eq!(rate_limit.per_second, 2);
+                assert_eq!(rate_limit.burst_size, 5);
+            },
+        );
+    }
+
+    #[test]
+    fn rate_limit_custom_values() {
+        temp_env::with_vars(
+            vec![
+                ("KORROSYNC_RATE_LIMIT_PER_SECOND", Some("10")),
+                ("KORROSYNC_RATE_LIMIT_BURST_SIZE", Some("20")),
+            ],
+            || {
+                let rate_limit = RateLimit::from_env();
+                assert_eq!(rate_limit.per_second, 10);
+                assert_eq!(rate_limit.burst_size, 20);
+            },
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value for KORROSYNC_RATE_LIMIT_PER_SECOND")]
+    fn rate_limit_invalid_per_second() {
+        temp_env::with_vars(
+            vec![("KORROSYNC_RATE_LIMIT_PER_SECOND", Some("abc"))],
+            || {
+                RateLimit::from_env();
+            },
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value for KORROSYNC_RATE_LIMIT_BURST_SIZE")]
+    fn rate_limit_invalid_burst_size() {
+        temp_env::with_vars(
+            vec![("KORROSYNC_RATE_LIMIT_BURST_SIZE", Some("xyz"))],
+            || {
+                RateLimit::from_env();
+            },
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "KORROSYNC_RATE_LIMIT_PER_SECOND must be greater than 0")]
+    fn rate_limit_zero_per_second() {
+        temp_env::with_vars(vec![("KORROSYNC_RATE_LIMIT_PER_SECOND", Some("0"))], || {
+            RateLimit::from_env();
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "KORROSYNC_RATE_LIMIT_BURST_SIZE must be greater than 0")]
+    fn rate_limit_zero_burst_size() {
+        temp_env::with_vars(vec![("KORROSYNC_RATE_LIMIT_BURST_SIZE", Some("0"))], || {
+            RateLimit::from_env();
+        });
     }
 }

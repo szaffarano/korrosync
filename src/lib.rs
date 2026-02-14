@@ -57,6 +57,10 @@
 //! - `KORROSYNC_CERT_PATH` - Path to TLS certificate file in PEM format (default: tls/cert.pem)
 //! - `KORROSYNC_KEY_PATH` - Path to TLS private key file in PEM format (default: tls/key.pem)
 //!
+//! Rate limiting:
+//! - `KORROSYNC_RATE_LIMIT_PER_SECOND` - Rate limit replenishment rate per second (default: 2)
+//! - `KORROSYNC_RATE_LIMIT_BURST_SIZE` - Maximum burst size before rate limiting (default: 5)
+//!
 //! # Features
 //!
 //! This crate supports the following optional cargo features:
@@ -132,7 +136,8 @@ pub async fn run_server(cfg: Config) -> eyre::Result<()> {
     };
 
     let shutdown_token_cleanup = CancellationToken::new();
-    let (rate_limiter, cleanup_task) = rate_limiter_layer(shutdown_token_cleanup.clone());
+    let (rate_limiter, cleanup_task) =
+        rate_limiter_layer(shutdown_token_cleanup.clone(), &cfg.rate_limit);
 
     let app = app(state)
         .layer(rate_limiter)
