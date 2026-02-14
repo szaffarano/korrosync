@@ -5,8 +5,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/szaffarano/korrosync/graph/badge.svg?token=4D0LOB1XSV)](https://codecov.io/gh/szaffarano/korrosync)
-[![CI](https://github.com/szaffarano/korrosync/actions/workflows/ci.yml/badge.svg)](https://github.com/szaffarano/korrosync/actions/workflows/ci.yml)
-[![Dependency Status](https://deps.rs/repo/github/szaffarano/korrosync/status.svg)](https://deps.rs/repo/github/szaffarano/korrosync)
+[![CI](https://GitHub.com/szaffarano/korrosync/actions/workflows/ci.yml/badge.svg)](https://github.com/szaffarano/korrosync/actions/workflows/ci.yml)
+[![Dependency Status](https://deps.rs/repo/GitHub/szaffarano/korrosync/status.svg)](https://deps.rs/repo/github/szaffarano/korrosync)
 
 </div>
 
@@ -109,6 +109,7 @@ cargo build --release --features tls
 ```
 
 **What it enables:**
+
 - Direct HTTPS support via rustls
 - TLS configuration options (`KORROSYNC_USE_TLS`, `KORROSYNC_CERT_PATH`, `KORROSYNC_KEY_PATH`)
 - Native certificate and key file handling
@@ -126,6 +127,8 @@ Korrosync is configured through environment variables:
 | `KORROSYNC_USE_TLS` | Enable TLS/HTTPS support (true/1/yes/on or false/0/no/off, case-insensitive) | `false` |
 | `KORROSYNC_CERT_PATH` | Path to TLS certificate file (PEM format) | `tls/cert.pem` |
 | `KORROSYNC_KEY_PATH` | Path to TLS private key file (PEM format) | `tls/key.pem` |
+| `KORROSYNC_RATE_LIMIT_PER_SECOND` | Rate limit replenishment rate per second | `2` |
+| `KORROSYNC_RATE_LIMIT_BURST_SIZE` | Maximum burst size before rate limiting | `5` |
 
 ### Example
 
@@ -141,6 +144,11 @@ export KORROSYNC_SERVER_ADDRESS=0.0.0.0:3000
 export KORROSYNC_USE_TLS=true
 export KORROSYNC_CERT_PATH=/etc/korrosync/tls/cert.pem
 export KORROSYNC_KEY_PATH=/etc/korrosync/tls/key.pem
+korrosync
+
+# With custom rate limiting
+export KORROSYNC_RATE_LIMIT_PER_SECOND=10
+export KORROSYNC_RATE_LIMIT_BURST_SIZE=20
 korrosync
 ```
 
@@ -296,10 +304,10 @@ The following features and improvements are planned:
 ### Infrastructure
 
 - [x] TLS/HTTPS configuration support
-- [ ] Configurable rate limiting via environment variables
+- [x] Configurable rate limiting via environment variables
 - [ ] Metrics and observability (Prometheus/OpenTelemetry)
-- [ ] Structured logging with log levels
-- [ ] CLI tool for administrative tasks (user management, database maintenance)
+- [x] Structured logging with log levels
+- [x] CLI tool for administrative tasks (user management, database maintenance)
 
 ### Deployment & Distribution
 

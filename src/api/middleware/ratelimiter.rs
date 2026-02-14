@@ -7,15 +7,18 @@ use tower_governor::{
     GovernorLayer, governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
 };
 
+use crate::config::RateLimit;
+
 pub fn rate_limiter_layer<RespBody>(
     shutdown_token: CancellationToken,
+    config: &RateLimit,
 ) -> (
     GovernorLayer<PeerIpKeyExtractor, NoOpMiddleware<QuantaInstant>, RespBody>,
     JoinHandle<()>,
 ) {
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(2)
-        .burst_size(5)
+        .per_second(config.per_second)
+        .burst_size(config.burst_size)
         .finish()
         .unwrap();
 

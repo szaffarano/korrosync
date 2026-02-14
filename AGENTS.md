@@ -62,6 +62,7 @@ All config via environment variables:
 - `KORROSYNC_DB_PATH` (default: `data/db.redb`)
 - `KORROSYNC_SERVER_ADDRESS` (default: `0.0.0.0:3000`)
 - TLS (behind `tls` feature flag): `KORROSYNC_USE_TLS`, `KORROSYNC_CERT_PATH`, `KORROSYNC_KEY_PATH`
+- Rate limiting: `KORROSYNC_RATE_LIMIT_PER_SECOND` (default: `2`), `KORROSYNC_RATE_LIMIT_BURST_SIZE` (default: `5`)
 
 ## Testing Patterns
 
