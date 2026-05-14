@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/szaffarano/korrosync/compare/v0.3.0...v0.4.0) - 2026-05-14
+
+### Added
+
+- make rate limiting configurable via environment variables ([#91](https://github.com/szaffarano/korrosync/pull/91))
+
+### Other
+
+- *(deps)* update rust crate uuid to v1.23.1 ([#109](https://github.com/szaffarano/korrosync/pull/109))
+- *(deps)* update codecov/codecov-action action to v6 ([#110](https://github.com/szaffarano/korrosync/pull/110))
+- *(deps)* update rust crate reqwest to v0.13.3 ([#107](https://github.com/szaffarano/korrosync/pull/107))
+- *(deps)* update rust crate tower-http to v0.6.10 ([#108](https://github.com/szaffarano/korrosync/pull/108))
+- *(deps)* update rust crate serial_test to v3.4.0 ([#93](https://github.com/szaffarano/korrosync/pull/93))
+- *(deps)* update axum monorepo ([#106](https://github.com/szaffarano/korrosync/pull/106))
+- *(deps)* update rust crate assert_cmd to v2.2.2 ([#104](https://github.com/szaffarano/korrosync/pull/104))
+- *(deps)* update rust crate tracing-subscriber to v0.3.23 ([#103](https://github.com/szaffarano/korrosync/pull/103))
+- *(deps)* update rust crate redb to v3.1.3 ([#102](https://github.com/szaffarano/korrosync/pull/102))
+- *(deps)* update docker/setup-qemu-action action to v4 ([#101](https://github.com/szaffarano/korrosync/pull/101))
+- *(deps)* update rust crate tokio to v1.52.3 ([#97](https://github.com/szaffarano/korrosync/pull/97))
+- *(deps)* update rust crate tempfile to v3.27.0 ([#95](https://github.com/szaffarano/korrosync/pull/95))
+- *(deps)* update rust crate chrono to v0.4.44 ([#94](https://github.com/szaffarano/korrosync/pull/94))
+- *(deps)* update rust crate clap to v4.6.1 ([#92](https://github.com/szaffarano/korrosync/pull/92))
+- Update deps ([#105](https://github.com/szaffarano/korrosync/pull/105))
+- *(deps)* update actions/upload-artifact action to v7 ([#96](https://github.com/szaffarano/korrosync/pull/96))
+- Add agents.md ([#90](https://github.com/szaffarano/korrosync/pull/90))
+
 ## [0.3.0](https://github.com/szaffarano/korrosync/compare/v0.2.1...v0.3.0) - 2026-02-13
 
 ### Added
