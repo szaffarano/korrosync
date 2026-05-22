@@ -22,14 +22,31 @@
     };
   };
 
-  outputs = inputs @ {flake-parts, ...}:
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    ...
+  }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
 
       imports = [
         inputs.git-hooks-nix.flakeModule
         inputs.treefmt-nix.flakeModule
       ];
+
+      # Flake-wide (not per-system) outputs
+      flake = {
+        nixosModules = {
+          korrosync = import ./module.nix self;
+          default = import ./module.nix self;
+        };
+      };
 
       perSystem = let
         targets = [
@@ -119,7 +136,10 @@
                 cargoLock.lockFile = ./Cargo.lock;
 
                 inherit buildInputs;
-                nativeBuildInputs = with pkgs; [pkg-config];
+                nativeBuildInputs = [pkgs.pkg-config];
+                nativeCheckInputs = [pkgs.cacert];
+
+                meta.mainProgram = cargoToml.package.name;
               };
           in {
             default = mkRustPackage pkgs.rustPlatform.buildRustPackage;
