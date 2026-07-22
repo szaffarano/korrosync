@@ -90,3 +90,78 @@ where
         Self::from_bytes(data1).cmp(&Self::from_bytes(data2))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::{Progress, User};
+
+    #[test]
+    fn from_bytes_empty_returns_default() {
+        let user = <Rkyv<User> as Value>::from_bytes(&[]);
+        assert_eq!(user.username(), "");
+        assert_eq!(user.last_activity(), None);
+
+        let progress = <Rkyv<Progress> as Value>::from_bytes(&[]);
+        assert_eq!(progress.device_id, "");
+        assert_eq!(progress.percentage, 0.0);
+    }
+
+    #[test]
+    fn from_bytes_corrupt_data_returns_default() {
+        let corrupt = [0u8, 1, 2, 3, 4, 5, 6, 7];
+        let user = <Rkyv<User> as Value>::from_bytes(&corrupt);
+        assert_eq!(user.username(), "");
+    }
+
+    #[test]
+    fn round_trip_user_and_progress() {
+        let user = User::new("alice", "password").expect("user");
+        let bytes = <Rkyv<User> as Value>::as_bytes(&user);
+        let decoded = <Rkyv<User> as Value>::from_bytes(bytes.as_slice());
+        assert_eq!(decoded.username(), "alice");
+        assert!(decoded.check("password").unwrap());
+
+        let progress = Progress {
+            device_id: "d1".into(),
+            device: "Kindle".into(),
+            percentage: 12.5,
+            progress: "p".into(),
+            timestamp: 42,
+        };
+        let bytes = <Rkyv<Progress> as Value>::as_bytes(&progress);
+        let decoded = <Rkyv<Progress> as Value>::from_bytes(bytes.as_slice());
+        assert_eq!(decoded.device_id, "d1");
+        assert_eq!(decoded.percentage, 12.5);
+    }
+
+    #[test]
+    fn compare_orders_by_deserialized_value() {
+        #[derive(
+            Debug, Default, PartialEq, Eq, PartialOrd, Ord, Archive, RkyvSerialize, RkyvDeserialize,
+        )]
+        struct SortKey(u32);
+
+        let a = <Rkyv<SortKey> as Value>::as_bytes(&SortKey(1));
+        let b = <Rkyv<SortKey> as Value>::as_bytes(&SortKey(2));
+        assert_eq!(
+            <Rkyv<SortKey> as Key>::compare(a.as_slice(), b.as_slice()),
+            Ordering::Less
+        );
+        assert_eq!(
+            <Rkyv<SortKey> as Key>::compare(b.as_slice(), a.as_slice()),
+            Ordering::Greater
+        );
+        assert_eq!(
+            <Rkyv<SortKey> as Key>::compare(a.as_slice(), a.as_slice()),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn fixed_width_is_none_and_type_name_includes_rkyv() {
+        assert_eq!(<Rkyv<User> as Value>::fixed_width(), None);
+        let name = format!("{:?}", <Rkyv<User> as Value>::type_name());
+        assert!(name.contains("Rkyv"));
+    }
+}

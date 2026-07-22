@@ -20,7 +20,7 @@ defaults:
 jobs:
   upload-assets:
     name: ${{ matrix.target }}
-    if: github.repository_owner == 'szaffarano'
+    if: github.repository == 'szaffarano/korrosync'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Install Rust toolchain

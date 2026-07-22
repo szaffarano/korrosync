@@ -185,3 +185,66 @@ impl ApiError {
         ApiError::Runtime(Box::new(e))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::response::IntoResponse;
+
+    #[test]
+    fn service_io_error_maps_to_500() {
+        let error: ApiError = ServiceError::Io(std::io::Error::other("disk full")).into();
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn service_db_error_maps_to_500() {
+        let error: ApiError = ServiceError::db(std::io::Error::other("db boom")).into();
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn not_found_maps_to_404() {
+        let error = ApiError::NotFound(ServiceError::db(std::io::Error::other("missing")));
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn runtime_maps_to_500() {
+        let error = ApiError::runtime(std::io::Error::other("unexpected"));
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn model_error_converts_to_runtime() {
+        let error: ApiError = model::Error::runtime(std::io::Error::other("model boom")).into();
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn unauthorized_and_invalid_input_status_codes() {
+        assert_eq!(
+            ApiError::Unauthorized("nope".into())
+                .into_response()
+                .status(),
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            ApiError::InvalidInput("bad".into())
+                .into_response()
+                .status(),
+            StatusCode::BAD_REQUEST
+        );
+        assert_eq!(
+            ApiError::ExistingUser("alice".into())
+                .into_response()
+                .status(),
+            StatusCode::PAYMENT_REQUIRED
+        );
+    }
+}
