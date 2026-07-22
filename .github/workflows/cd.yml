@@ -20,7 +20,7 @@ defaults:
 jobs:
   upload-assets:
     name: ${{ matrix.target }}
-    if: github.repository_owner == 'szaffarano'
+    if: github.repository == 'szaffarano/korrosync'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
