@@ -3,6 +3,7 @@ use std::io::BufRead;
 
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{self, Context};
+use md5::{Digest, Md5};
 
 use crate::config::Config;
 use crate::model::User;
@@ -37,7 +38,8 @@ pub enum UserCommands {
     Create {
         #[arg(short, long)]
         username: String,
-        /// Password (use '-' to read from stdin)
+        /// Plain password as entered in KOReader (use '-' to read from stdin).
+        /// Automatically MD5-hashed to match KOReader's sync client.
         #[arg(short, long)]
         password: String,
     },
@@ -52,7 +54,8 @@ pub enum UserCommands {
     ResetPassword {
         #[arg(short, long)]
         username: String,
-        /// Password (use '-' to read from stdin)
+        /// Plain password as entered in KOReader (use '-' to read from stdin).
+        /// Automatically MD5-hashed to match KOReader's sync client.
         #[arg(short, long)]
         password: String,
     },
@@ -99,13 +102,23 @@ pub fn resolve_password(password: String) -> eyre::Result<String> {
     resolve_password_from_reader(password, std::io::stdin().lock())
 }
 
+/// Hash a password the same way KOReader's sync client does before sending it.
+///
+/// KOReader sends `md5(password)` as both the registration password and `x-auth-key`.
+pub fn koreader_password_hash(password: &str) -> String {
+    Md5::digest(password.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 /// Execute a user-management subcommand against the database at `db_path`.
 pub fn run_user_command(db_path: &str, cmd: UserCommands) -> eyre::Result<()> {
     let service = KorrosyncServiceRedb::new(db_path).context("Failed to open database")?;
 
     match cmd {
         UserCommands::Create { username, password } => {
-            let password = resolve_password(password)?;
+            let password = koreader_password_hash(&resolve_password(password)?);
             let user = User::new(&username, &password)
                 .map_err(|e| eyre::eyre!("Failed to create user: {}", e))?;
             service
@@ -145,7 +158,7 @@ pub fn run_user_command(db_path: &str, cmd: UserCommands) -> eyre::Result<()> {
             }
         }
         UserCommands::ResetPassword { username, password } => {
-            let password = resolve_password(password)?;
+            let password = koreader_password_hash(&resolve_password(password)?);
             let existing = service
                 .get_user(username.clone())
                 .context("Failed to query user")?;
@@ -241,6 +254,18 @@ mod tests {
     }
 
     #[test]
+    fn koreader_password_hash_matches_md5_hex() {
+        assert_eq!(
+            koreader_password_hash("pass"),
+            "1a1dc91c907325c69271ddf0c944bc72"
+        );
+        assert_eq!(
+            koreader_password_hash("pass2"),
+            "c1572d05424d0ecb2a65ec6a82aeacbf"
+        );
+    }
+
+    #[test]
     fn user_create_list_remove_and_reset_password() {
         let db = NamedTempFile::new().unwrap();
         let db_path = db.path().to_string_lossy().to_string();
@@ -256,6 +281,19 @@ mod tests {
 
         run_user_command(&db_path, UserCommands::List).expect("list users");
 
+        {
+            let service = KorrosyncServiceRedb::new(&db_path).unwrap();
+            let user = service.get_user("alice".into()).unwrap().unwrap();
+            assert!(
+                user.check(koreader_password_hash("secret")).unwrap(),
+                "CLI create should store KOReader-style MD5(password)"
+            );
+            assert!(
+                !user.check("secret").unwrap(),
+                "plaintext password must not verify after KOReader MD5 preprocessing"
+            );
+        }
+
         run_user_command(
             &db_path,
             UserCommands::ResetPassword {
@@ -268,7 +306,8 @@ mod tests {
         {
             let service = KorrosyncServiceRedb::new(&db_path).unwrap();
             let user = service.get_user("alice".into()).unwrap().unwrap();
-            assert!(user.check("new-secret").unwrap());
+            assert!(user.check(koreader_password_hash("new-secret")).unwrap());
+            assert!(!user.check("new-secret").unwrap());
         }
 
         run_user_command(

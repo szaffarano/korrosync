@@ -46,6 +46,7 @@ tower_governor = "0.8.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 uuid = { version = "1.18.1", features = ["v4"] }
+md5 = { package = "md-5", version = "0.11.0" }
 
 [dev-dependencies]
 assert_cmd = "2.1.1"
