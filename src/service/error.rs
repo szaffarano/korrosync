@@ -44,3 +44,22 @@ impl ServiceError {
         ServiceError::DB(Box::new(e))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn db_boxes_underlying_error() {
+        let err = ServiceError::db(std::io::Error::other("db boom"));
+        assert!(matches!(err, ServiceError::DB(_)));
+        assert_eq!(err.to_string(), "db boom");
+    }
+
+    #[test]
+    fn io_from_std_io_error() {
+        let err: ServiceError = std::io::Error::other("io boom").into();
+        assert!(matches!(err, ServiceError::Io(_)));
+        assert_eq!(err.to_string(), "io boom");
+    }
+}

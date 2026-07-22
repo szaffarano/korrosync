@@ -17,3 +17,15 @@ impl Error {
         Error::Runtime(Box::new(e))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtime_boxes_underlying_error() {
+        let err = Error::runtime(std::io::Error::other("boom"));
+        assert!(matches!(err, Error::Runtime(_)));
+        assert_eq!(err.to_string(), "boom");
+    }
+}
