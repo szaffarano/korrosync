@@ -29,9 +29,29 @@ use argon2::{
     },
 };
 use chrono::Utc;
+use md5::{Digest, Md5};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::model::error::Error;
+
+/// Computes the MD5 hex digest of a password, matching what real kosync clients (KOReader,
+/// CrossPoint, etc.) always compute client-side and send as the password/x-auth-key value.
+///
+/// The kosync protocol never sends the plain-text password over the wire: clients MD5-hash it
+/// first, both at registration and at login. The server therefore never sees, and never expects
+/// to see, the literal password — only this digest is meaningful input to [`User::new`] and
+/// [`User::check`]. Any caller that starts from a real plain-text password (e.g. the CLI, which
+/// takes one directly from an admin) must run it through this function first so the stored
+/// credential matches what clients will present later.
+pub fn md5_hex(password: impl AsRef<[u8]>) -> String {
+    let mut hasher = Md5::new();
+    hasher.update(password.as_ref());
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
 
 /// User model representing an authenticated user in the system.
 ///
@@ -330,6 +350,22 @@ mod tests {
             (now - activity).abs() < 1000,
             "touch() should set timestamp to current time (within 1 second)"
         );
+    }
+
+    #[test]
+    fn test_md5_hex_matches_known_digest() {
+        // Known-answer test vector from RFC 1321.
+        assert_eq!(md5_hex("abc"), "900150983cd24fb0d6963f7d28e17f72");
+    }
+
+    #[test]
+    fn test_md5_hex_is_deterministic() {
+        assert_eq!(md5_hex("same_password"), md5_hex("same_password"));
+    }
+
+    #[test]
+    fn test_md5_hex_differs_for_different_input() {
+        assert_ne!(md5_hex("password_a"), md5_hex("password_b"));
     }
 
     #[test]

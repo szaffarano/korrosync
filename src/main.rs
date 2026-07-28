@@ -4,7 +4,7 @@ use clap::Parser;
 use color_eyre::eyre::{self, Context};
 use korrosync::cli::{Cli, Commands, DbCommands, UserCommands};
 use korrosync::config::Config;
-use korrosync::model::User;
+use korrosync::model::{User, md5_hex};
 use korrosync::service::db::{KorrosyncService, KorrosyncServiceRedb};
 
 #[tokio::main]
@@ -28,7 +28,9 @@ async fn main() -> eyre::Result<()> {
             match cmd {
                 UserCommands::Create { username, password } => {
                     let password = resolve_password(password)?;
-                    let user = User::new(&username, &password)
+                    // kosync clients MD5-hash the password before ever sending it, so the CLI
+                    // must apply the same step to match what a real client will present at login.
+                    let user = User::new(&username, md5_hex(&password))
                         .map_err(|e| eyre::eyre!("Failed to create user: {}", e))?;
                     service
                         .create_or_update_user(user)
@@ -74,7 +76,7 @@ async fn main() -> eyre::Result<()> {
                     if existing.is_none() {
                         eyre::bail!("User '{}' not found", username);
                     }
-                    let user = User::new(&username, &password)
+                    let user = User::new(&username, md5_hex(&password))
                         .map_err(|e| eyre::eyre!("Failed to hash password: {}", e))?;
                     service
                         .create_or_update_user(user)

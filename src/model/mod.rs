@@ -42,4 +42,4 @@ mod user;
 
 pub use error::Error;
 pub use progress::Progress;
-pub use user::User;
+pub use user::{User, md5_hex};
