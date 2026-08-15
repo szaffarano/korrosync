@@ -51,6 +51,10 @@ pub struct User {
     /// Hash of the user's password (never stored plaintext)
     password_hash: String,
     /// Optional timestamp (in milliseconds since Unix epoch) of last user activity
+    ///
+    /// Milliseconds on purpose: `last_activity` is a korrosync addition to
+    /// `GET /users/auth` and no KOReader client reads it, so it is not bound by the
+    /// seconds the sync protocol uses for `Progress::timestamp`.
     last_activity: Option<i64>,
 }
 
