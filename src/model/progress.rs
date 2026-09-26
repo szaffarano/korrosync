@@ -21,7 +21,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 ///     device: "Kindle Paperwhite".to_string(),
 ///     percentage: 67.5,
 ///     progress: "Page 135 of 200".to_string(),
-///     timestamp: 1609459200000,
+///     timestamp: 1609459200,
 /// };
 /// ```
 #[derive(Debug, Archive, Serialize, Deserialize, Default, Clone)]
@@ -34,6 +34,9 @@ pub struct Progress {
     pub percentage: f32,
     /// Textual representation of progress
     pub progress: String,
-    /// Unix timestamp in milliseconds when progress was last updated
+    /// Unix timestamp in seconds when progress was last updated
+    ///
+    /// KOReader compares this against its own `os.time()`, so the unit is part of the
+    /// sync protocol and has to stay in seconds.
     pub timestamp: u64,
 }

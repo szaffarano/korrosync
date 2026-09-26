@@ -95,7 +95,7 @@ impl From<UpdateProgressRequest> for Progress {
             device: value.device,
             percentage: value.percentage,
             progress: value.progress,
-            timestamp: chrono::Utc::now().timestamp_millis() as u64,
+            timestamp: chrono::Utc::now().timestamp() as u64,
         }
     }
 }

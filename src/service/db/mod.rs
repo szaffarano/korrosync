@@ -75,7 +75,11 @@ pub trait KorrosyncService {
     ///
     /// Returns a tuple containing:
     /// - The document identifier (echoed back)
-    /// - The timestamp from the progress record
+    /// - The timestamp from the progress record, echoed back as given
+    ///
+    /// Unlike [`KorrosyncService::get_progress`] this does not normalise the timestamp:
+    /// the caller owns the unit of what it writes, and laundering an out-of-contract
+    /// value here would hide the bug that produced it.
     ///
     /// # Errors
     ///
@@ -88,6 +92,12 @@ pub trait KorrosyncService {
     ) -> Result<(String, u64), ServiceError>;
 
     /// Retrieves reading progress for a specific user and document.
+    ///
+    /// `Progress::timestamp` must come back in seconds since the Unix epoch, which is what
+    /// KOReader compares against its own `os.time()`. Implementations whose storage may
+    /// still hold rows written before korrosync switched units are expected to rescale them
+    /// on read, so this can return a different timestamp from the one `update_progress`
+    /// stored.
     ///
     /// # Arguments
     ///

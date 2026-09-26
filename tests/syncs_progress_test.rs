@@ -43,6 +43,53 @@ async fn put_syncs_progress_updates_successfully() {
 }
 
 #[tokio::test]
+async fn put_syncs_progress_returns_timestamp_in_seconds() {
+    let app = spawn_app();
+
+    let request_body = json!({
+        "device_id": "device123",
+        "device": "MyDevice",
+        "document": "test_doc.epub",
+        "percentage": 0.75,
+        "progress": "Chapter 5"
+    })
+    .to_string();
+
+    let before = chrono::Utc::now().timestamp() as u64;
+
+    let response = app
+        .oneshot(
+            AuthenticatedRequestBuilder::put("/syncs/progress")
+                .json_body(&request_body)
+                .build(),
+        )
+        .await
+        .expect("Failed to send request");
+
+    let after = chrono::Utc::now().timestamp() as u64;
+
+    assert_eq!(StatusCode::OK, response.status());
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("Failed to read response body");
+    let body_str = String::from_utf8(body.to_vec()).expect("Invalid UTF-8");
+    let body_json: serde_json::Value =
+        serde_json::from_str(&body_str).expect("Invalid JSON response");
+
+    let timestamp = body_json["timestamp"]
+        .as_u64()
+        .expect("timestamp should be an unsigned integer");
+
+    // KOReader compares this against its own os.time(), so anything but seconds makes the
+    // server's progress look unconditionally newer than the device's.
+    assert!(
+        (before..=after).contains(&timestamp),
+        "Expected seconds since the epoch in {before}..={after}, got {timestamp}"
+    );
+}
+
+#[tokio::test]
 async fn put_syncs_progress_fails_without_auth() {
     let app = spawn_app();
 

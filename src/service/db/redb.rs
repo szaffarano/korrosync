@@ -30,7 +30,7 @@
 //!     device: "Kindle".to_string(),
 //!     percentage: 45.5,
 //!     progress: "Chapter 5".to_string(),
-//!     timestamp: 1609459200000,
+//!     timestamp: 1609459200,
 //! };
 //! service.update_progress("alice".into(), "book.epub".into(), progress)?;
 //! # Ok(())
@@ -52,6 +52,10 @@ use crate::{
 const USERS_TABLE: TableDefinition<&str, Rkyv<User>> = TableDefinition::new("users-v2");
 const PROGRESS_TABLE: TableDefinition<Rkyv<ProgressKey>, Rkyv<Progress>> =
     TableDefinition::new("progress-v2");
+
+/// Smallest value a stored progress timestamp cannot plausibly hold as seconds: read as
+/// seconds it lands in the year 2286, read as milliseconds in 1970.
+const MILLISECOND_TIMESTAMP_FLOOR: u64 = 10_000_000_000;
 
 /// Redb-based implementation of KoReader synchronization service.
 ///
@@ -236,7 +240,7 @@ impl KorrosyncService for KorrosyncServiceRedb {
     ///     device: "Kindle".to_string(),
     ///     percentage: 45.5,
     ///     progress: "Page 91 of 200".to_string(),
-    ///     timestamp: 1609459200000,
+    ///     timestamp: 1609459200,
     /// };
     ///
     /// let (doc, ts) = service.update_progress("alice".into(), "book.epub".into(), progress)?;
@@ -304,7 +308,9 @@ impl KorrosyncService for KorrosyncServiceRedb {
             .map_err(ServiceError::db)?;
 
         if let Some(progress) = table.get(&key).map_err(ServiceError::db)? {
-            Ok(Some(progress.value()))
+            let mut progress = progress.value();
+            progress.timestamp = timestamp_as_seconds(progress.timestamp);
+            Ok(Some(progress))
         } else {
             Ok(None)
         }
@@ -335,6 +341,24 @@ impl KorrosyncService for KorrosyncServiceRedb {
     }
 }
 
+/// Rescales progress timestamps that earlier releases stored in milliseconds.
+///
+/// Normalising on read leaves the stored rows untouched, so the whole shim is undone by
+/// deleting this function and its call site. Rewriting the rows once, inside the write
+/// transaction `KorrosyncServiceRedb::new` already opens, is the other option and is not
+/// reversible.
+///
+/// TODO: drop this together with `MILLISECOND_TIMESTAMP_FLOOR` once every deployment has
+/// run a release that writes seconds; a row settles into seconds the next time the device
+/// pushes progress for that document.
+fn timestamp_as_seconds(timestamp: u64) -> u64 {
+    if timestamp >= MILLISECOND_TIMESTAMP_FLOOR {
+        timestamp / 1_000
+    } else {
+        timestamp
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -344,11 +368,59 @@ mod tests {
 
     // === Test Helper Functions ===
 
-    fn create_test_service() -> (TempDir, impl KorrosyncService) {
+    // Concrete rather than `impl KorrosyncService` so that tests can reach past the trait
+    // into PROGRESS_TABLE, which is the only way to exercise storage on its own.
+    fn create_test_service() -> (TempDir, KorrosyncServiceRedb) {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let db_path = temp_dir.path().join("test.db");
         let service = KorrosyncServiceRedb::new(db_path).expect("Failed to create service");
         (temp_dir, service)
+    }
+
+    /// Writes a row straight into the progress table, bypassing `update_progress` so a
+    /// fixture can hold values the write path is not meant to accept.
+    fn insert_progress_row(
+        service: &KorrosyncServiceRedb,
+        user: &str,
+        document: &str,
+        progress: &Progress,
+    ) {
+        let key = ProgressKey {
+            document: document.to_string(),
+            user: user.to_string(),
+        };
+
+        let write_txn = service.db.begin_write().expect("Failed to begin write");
+        {
+            let mut table = write_txn
+                .open_table(PROGRESS_TABLE)
+                .expect("Failed to open progress table");
+            table.insert(&key, progress).expect("Failed to insert row");
+        }
+        write_txn.commit().expect("Failed to commit");
+    }
+
+    /// Reads a row straight out of the progress table, bypassing `get_progress` and its
+    /// millisecond normalisation.
+    fn read_progress_row(
+        service: &KorrosyncServiceRedb,
+        user: &str,
+        document: &str,
+    ) -> Option<Progress> {
+        let key = ProgressKey {
+            document: document.to_string(),
+            user: user.to_string(),
+        };
+
+        let read_txn = service.db.begin_read().expect("Failed to begin read");
+        let table = read_txn
+            .open_table(PROGRESS_TABLE)
+            .expect("Failed to open progress table");
+
+        table
+            .get(&key)
+            .expect("Failed to read row")
+            .map(|row| row.value())
     }
 
     fn create_test_user(username: &str) -> User {
@@ -361,7 +433,7 @@ mod tests {
             device: "Kindle".to_string(),
             percentage: 45.5,
             progress: "Page 91 of 200".to_string(),
-            timestamp: 1609459200000,
+            timestamp: 1609459200,
         }
     }
 
@@ -539,7 +611,7 @@ mod tests {
         assert_eq!(retrieved.device, "Kindle");
         assert_eq!(retrieved.percentage, 45.5);
         assert_eq!(retrieved.progress, "Page 91 of 200");
-        assert_eq!(retrieved.timestamp, 1609459200000);
+        assert_eq!(retrieved.timestamp, 1609459200);
     }
 
     #[test]
@@ -552,7 +624,7 @@ mod tests {
             .expect("Failed to update progress");
 
         assert_eq!(doc, "book.epub");
-        assert_eq!(ts, 1609459200000);
+        assert_eq!(ts, 1609459200);
     }
 
     #[test]
@@ -592,6 +664,44 @@ mod tests {
         assert_eq!(retrieved.device_id, "device-2");
         assert_eq!(retrieved.percentage, 70.0);
         assert_eq!(retrieved.timestamp, 2000000);
+    }
+
+    #[test]
+    fn test_get_progress_rescales_legacy_millisecond_timestamp() {
+        let (_temp, service) = create_test_service();
+
+        // Written straight into the table: earlier releases stored milliseconds, but
+        // `update_progress` is not a supported way to produce such a row today.
+        let legacy = Progress {
+            timestamp: 1609459200000,
+            ..create_test_progress()
+        };
+        insert_progress_row(&service, "alice", "book.epub", &legacy);
+
+        let retrieved = service
+            .get_progress("alice".to_string(), "book.epub".to_string())
+            .expect("Failed to get progress")
+            .expect("Progress should exist");
+
+        assert_eq!(
+            retrieved.timestamp, 1609459200,
+            "Timestamps stored in milliseconds should be read back as seconds"
+        );
+    }
+
+    #[test]
+    fn test_timestamp_as_seconds_boundaries() {
+        assert_eq!(timestamp_as_seconds(0), 0);
+        assert_eq!(
+            timestamp_as_seconds(MILLISECOND_TIMESTAMP_FLOOR - 1),
+            MILLISECOND_TIMESTAMP_FLOOR - 1,
+            "Values below the floor are already seconds"
+        );
+        assert_eq!(
+            timestamp_as_seconds(MILLISECOND_TIMESTAMP_FLOOR),
+            MILLISECOND_TIMESTAMP_FLOOR / 1_000,
+            "The floor itself is the first value read as milliseconds"
+        );
     }
 
     #[test]
@@ -696,7 +806,7 @@ mod tests {
             device: "Kindle Paperwhite 11th Gen".to_string(),
             percentage: 67.89,
             progress: "Chapter 12, Page 345 of 512".to_string(),
-            timestamp: 1704067200000,
+            timestamp: 1704067200,
         };
 
         service
@@ -713,7 +823,7 @@ mod tests {
         assert_eq!(retrieved.device, "Kindle Paperwhite 11th Gen");
         assert_eq!(retrieved.percentage, 67.89);
         assert_eq!(retrieved.progress, "Chapter 12, Page 345 of 512");
-        assert_eq!(retrieved.timestamp, 1704067200000);
+        assert_eq!(retrieved.timestamp, 1704067200);
     }
 
     // === Thread Safety and Concurrency Tests ===
@@ -856,12 +966,14 @@ mod tests {
             timestamp: 0,
         };
 
+        // The largest timestamp `get_progress` still reads as seconds; above the floor it
+        // is treated as a millisecond value written by an earlier release.
         let progress_100 = Progress {
             device_id: "device-1".to_string(),
             device: "Test".to_string(),
             percentage: 100.0,
             progress: "End".to_string(),
-            timestamp: u64::MAX,
+            timestamp: MILLISECOND_TIMESTAMP_FLOOR - 1,
         };
 
         service
@@ -870,7 +982,7 @@ mod tests {
 
         service
             .update_progress("alice".into(), "doc2".into(), progress_100)
-            .expect("Should handle 100% and max timestamp");
+            .expect("Should handle 100% and max seconds timestamp");
 
         let retrieved_0 = service
             .get_progress("alice".to_string(), "doc1".to_string())
@@ -889,7 +1001,27 @@ mod tests {
         assert!(retrieved_100.is_some());
         let retrieved_100 = retrieved_100.unwrap();
         assert_eq!(retrieved_100.percentage, 100.0);
-        assert_eq!(retrieved_100.timestamp, u64::MAX);
+        assert_eq!(retrieved_100.timestamp, MILLISECOND_TIMESTAMP_FLOOR - 1);
+    }
+
+    #[test]
+    fn test_progress_table_stores_timestamps_verbatim() {
+        let (_temp, service) = create_test_service();
+
+        let progress = Progress {
+            timestamp: u64::MAX,
+            ..create_test_progress()
+        };
+
+        insert_progress_row(&service, "alice", "doc1", &progress);
+
+        let stored = read_progress_row(&service, "alice", "doc1").expect("Row should exist");
+
+        assert_eq!(
+            stored.timestamp,
+            u64::MAX,
+            "Storage must round-trip the whole u64 range; only the read path rescales"
+        );
     }
 
     #[test]
