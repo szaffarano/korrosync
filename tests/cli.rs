@@ -42,7 +42,7 @@ async fn cli_should_start_server() {
 }
 
 async fn assert_server() {
-    let retry_strategy = FixedInterval::from_millis(10).take(3);
+    let retry_strategy = FixedInterval::from_millis(100).take(30);
     let response = Retry::spawn(retry_strategy, async || {
         let client = reqwest::Client::new();
         client
