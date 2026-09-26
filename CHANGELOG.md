@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3](https://github.com/szaffarano/korrosync/compare/v0.4.2...v0.4.3) - 2026-09-26
+
+### Other
+
+- stabilize CLI startup integration check ([#143](https://github.com/szaffarano/korrosync/pull/143))
+
 ## [0.4.2](https://github.com/szaffarano/korrosync/compare/v0.4.1...v0.4.2) - 2026-09-26
 
 ### Fixed
