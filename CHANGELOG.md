@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/szaffarano/korrosync/compare/v0.4.1...v0.4.2) - 2026-09-26
+
+### Fixed
+
+- return sync progress timestamps in seconds ([#132](https://github.com/szaffarano/korrosync/pull/132))
+- *(deps)* update rust crate argon2 to 0.6.0 ([#140](https://github.com/szaffarano/korrosync/pull/140))
+- *(deps)* update rust crate tower-http to 0.7.0 ([#123](https://github.com/szaffarano/korrosync/pull/123))
+
+### Other
+
+- *(deps)* update rust crate uuid to v1.26.1 ([#119](https://github.com/szaffarano/korrosync/pull/119))
+- *(deps)* update rust crate tokio-util to v0.7.19 ([#138](https://github.com/szaffarano/korrosync/pull/138))
+- *(deps)* update rust crate redb to v4.3.0 ([#139](https://github.com/szaffarano/korrosync/pull/139))
+- *(deps)* update rust crate serial_test to v4 ([#141](https://github.com/szaffarano/korrosync/pull/141))
+
 ## [0.4.1](https://github.com/szaffarano/korrosync/compare/v0.4.0...v0.4.1) - 2026-05-29
 
 ### Fixed
