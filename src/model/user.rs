@@ -24,9 +24,7 @@
 
 use argon2::{
     Argon2,
-    password_hash::{
-        self, PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
-    },
+    password_hash::{self, PasswordHasher, PasswordVerifier, phc::PasswordHash},
 };
 use chrono::Utc;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -89,11 +87,8 @@ impl User {
         let password = password.into();
         let username = username.into();
 
-        let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)?
-            .to_string();
+        let password_hash = argon2.hash_password(password.as_bytes())?.to_string();
 
         Ok(Self {
             username,
@@ -155,7 +150,7 @@ impl User {
 
         match argon2.verify_password(password.as_ref().as_bytes(), &parsed_hash) {
             Ok(_) => Ok(true),
-            Err(password_hash::Error::Password) => Ok(false),
+            Err(password_hash::Error::PasswordInvalid) => Ok(false),
             Err(e) => Err(Error::runtime(e)),
         }
     }
