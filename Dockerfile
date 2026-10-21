@@ -41,10 +41,13 @@ RUN case "$TARGETPLATFORM" in \
 
 FROM scratch
 
-ENV KORROSYNC_DB_PATH=/db.redb
+# /data is meant to be mounted; the old /db.redb default put the database in the
+# container layer, where docker rm discards it.
+ENV KORROSYNC_DB_PATH=/data/db.redb
 ENV KORROSYNC_SERVER_ADDRESS=0.0.0.0:3000
 
 COPY --from=builder /output/korrosync /app/korrosync
 EXPOSE 3000
 
 ENTRYPOINT ["/app/korrosync"]
+CMD ["serve"]
