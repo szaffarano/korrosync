@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4](https://github.com/szaffarano/korrosync/compare/v0.4.3...v0.4.4) - 2026-10-26
+
+### Other
+
+- update Cargo.lock dependencies
+
 ## [0.4.3](https://github.com/szaffarano/korrosync/compare/v0.4.2...v0.4.3) - 2026-10-19
 
 ### Other
