@@ -77,7 +77,6 @@ docker buildx build \
 docker run -d \
   -p 3000:3000 \
   -v $(pwd)/data:/data \
-  -e KORROSYNC_DB_PATH=/data/db.redb \
   --name korrosync \
   korrosync
 
@@ -86,12 +85,28 @@ docker run -d \
   -p 3000:3000 \
   -v $(pwd)/data:/data \
   -v $(pwd)/tls:/tls \
-  -e KORROSYNC_DB_PATH=/data/db.redb \
   -e KORROSYNC_USE_TLS=true \
   -e KORROSYNC_CERT_PATH=/tls/cert.pem \
   -e KORROSYNC_KEY_PATH=/tls/key.pem \
   --name korrosync \
   korrosync
+
+# Subcommands replace the default `serve` command
+docker run --rm \
+  -v $(pwd)/data:/data \
+  korrosync db info
+```
+
+The image runs `serve` by default and stores the database at `/data/db.redb`, so mount
+something at `/data` to keep users and reading positions across container recreation.
+
+Images built before this change defaulted to `/db.redb`. If you are upgrading from one of
+those and never set `KORROSYNC_DB_PATH` yourself, copy the database out before recreating
+the container, otherwise the server starts on an empty database and every login fails with
+`401 Invalid credentials`:
+
+```bash
+docker cp korrosync:/db.redb ./data/db.redb
 ```
 
 ## Features
