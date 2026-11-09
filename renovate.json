@@ -12,9 +12,18 @@
       "matchStrings": [
         "ZIG_VERSION=\"?(?<currentValue>[^\"\\s]+)\"?"
       ],
-      "datasourceTemplate": "github-releases",
+      "datasourceTemplate": "custom.zig",
       "depNameTemplate": "ziglang/zig",
-      "extractVersionTemplate": "^(?<version>.*)$"
+      "versioningTemplate": "semver-coerced"
     }
-  ]
+  ],
+  "customDatasources": {
+    "zig": {
+      "defaultRegistryUrlTemplate": "https://ziglang.org/download/index.json",
+      "format": "json",
+      "transformTemplates": [
+        "{ \"releases\": $keys($)[$ != \"master\"].{ \"version\": $ } }"
+      ]
+    }
+  }
 }
