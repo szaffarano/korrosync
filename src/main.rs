@@ -46,8 +46,9 @@ async fn main() -> eyre::Result<()> {
                             let activity = user
                                 .last_activity()
                                 .map(|ts| {
-                                    chrono::DateTime::from_timestamp_millis(ts)
-                                        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+                                    jiff::Timestamp::from_millisecond(ts)
+                                        .ok()
+                                        .map(|ts| ts.strftime("%Y-%m-%d %H:%M:%S UTC").to_string())
                                         .unwrap_or_else(|| ts.to_string())
                                 })
                                 .unwrap_or_else(|| "never".to_string());

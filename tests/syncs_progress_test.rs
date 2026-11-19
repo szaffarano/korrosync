@@ -55,7 +55,7 @@ async fn put_syncs_progress_returns_timestamp_in_seconds() {
     })
     .to_string();
 
-    let before = chrono::Utc::now().timestamp() as u64;
+    let before = jiff::Timestamp::now().as_second() as u64;
 
     let response = app
         .oneshot(
@@ -66,7 +66,7 @@ async fn put_syncs_progress_returns_timestamp_in_seconds() {
         .await
         .expect("Failed to send request");
 
-    let after = chrono::Utc::now().timestamp() as u64;
+    let after = jiff::Timestamp::now().as_second() as u64;
 
     assert_eq!(StatusCode::OK, response.status());
 

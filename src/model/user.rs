@@ -26,7 +26,7 @@ use argon2::{
     Argon2,
     password_hash::{self, PasswordHasher, PasswordVerifier, phc::PasswordHash},
 };
-use chrono::Utc;
+use jiff::Timestamp;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::model::error::Error;
@@ -223,7 +223,7 @@ impl User {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn touch(&mut self) {
-        self.last_activity = Some(Utc::now().timestamp_millis());
+        self.last_activity = Some(Timestamp::now().as_millisecond());
     }
 }
 
@@ -323,7 +323,7 @@ mod tests {
             "touch() should set last_activity"
         );
 
-        let now = Utc::now().timestamp_millis();
+        let now = Timestamp::now().as_millisecond();
         let activity = user.last_activity().unwrap();
         assert!(
             (now - activity).abs() < 1000,
