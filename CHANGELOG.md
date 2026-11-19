@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/szaffarano/korrosync/compare/v0.4.5...v0.4.6) - 2026-11-19
+
+### Added
+
+- *(deps)* migrate from the unmaintained chrono crate to jiff ([#169](https://github.com/szaffarano/korrosync/pull/169))
+
+### Fixed
+
+- *(deps)* update rust crate redb to v5 ([#168](https://github.com/szaffarano/korrosync/pull/168))
+
+### Other
+
+- *(deps)* update rust crate axum-server to v0.9.2 ([#164](https://github.com/szaffarano/korrosync/pull/164))
+- *(deps)* update rust crate clap to v4.6.8 ([#166](https://github.com/szaffarano/korrosync/pull/166))
+- *(deps)* update rust crate uuid to v1.29.3 ([#167](https://github.com/szaffarano/korrosync/pull/167))
+
 ## [0.4.5](https://github.com/szaffarano/korrosync/compare/v0.4.4...v0.4.5) - 2026-11-09
 
 ### Fixed
